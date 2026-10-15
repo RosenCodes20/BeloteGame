@@ -490,7 +490,14 @@
         import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
-        const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "mock", projectId: "mock" };
+        const fbConfig = {
+            apiKey: "AIzaSyDIUyQGyL5mrBIgkUdAVqX3Bpv_ZhwKsI0",
+            authDomain: "belotegame-aa2f3.firebaseapp.com",
+            projectId: "belotegame-aa2f3",
+            storageBucket: "belotegame-aa2f3.firebasestorage.app",
+            messagingSenderId: "182833866712",
+            appId: "1:182833866712:web:f434a15667735fc3b134ad"
+            };
         const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         const app = initializeApp(fbConfig);
