@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Белот Онлайн - Мултиплейър и Тренировка</title>
+    <title>Белот Онлайн - Мултиплейър и Тренировка</titаe>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -89,6 +89,15 @@
             display: flex;
             padding: 10px;
             z-index: 20;
+            width: 100%;
+            max-width: 100vw;
+            justify-content: center;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        .hand-container .card {
+            pointer-events: auto;
         }
 
         #game-view { display: none; }
@@ -268,17 +277,19 @@
             .seat-right { right: -5px; }
 
             .card {
-                width: 52px;
-                height: 80px;
-                font-size: 18px;
-                margin: 0 -12px;
+                width: 58px;
+                height: 88px;
+                font-size: 20px;
+                margin: 0 -4px;
                 border-width: 1.5px;
                 border-radius: 6px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             }
             .card.playable:active,
             .card.playable:hover {
-                transform: translateY(-28px) scale(1.15) !important;
-                border-width: 2px;
+                transform: translateY(-35px) scale(1.1) !important;
+                border-width: 2.5px;
+                box-shadow: 0 8px 16px rgba(0,0,0,0.6);
                 z-index: 100 !important;
             }
             
@@ -287,7 +298,7 @@
             }
             
             .hand-container {
-                bottom: -15px;
+                bottom: 10px;
                 width: 100%;
                 justify-content: center;
                 padding: 5px 0;
@@ -1211,13 +1222,18 @@
                 cardEl.className = `card ${card.color} ${currentTurn === 0 && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
                 
                 const offset = index - (hand.length - 1) / 2;
-                const rotate = offset * (isMobile ? 3 : 5);
-                const translateY = Math.abs(offset) * (isMobile ? 1.5 : 2);
+                const rotate = offset * (isMobile ? 2.5 : 5);
+                const translateY = Math.abs(offset) * (isMobile ? 1.2 : 2);
                 
-                // Нагласяме отрицателния марджин според брой карти за мобилни устройства
+                // Изчисляваме динамичен марджин спрямо броя карти, за да има отчетлив разстояние
                 if (isMobile) {
-                    if (hand.length > 5) cardEl.style.margin = "0 -16px";
-                    else cardEl.style.margin = "0 -10px";
+                    if (hand.length > 6) {
+                        cardEl.style.margin = "0 -8px";
+                    } else if (hand.length > 3) {
+                        cardEl.style.margin = "0 -3px";
+                    } else {
+                        cardEl.style.margin = "0 2px";
+                    }
                 }
                 
                 cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY}px)`;
@@ -1225,8 +1241,8 @@
                 cardEl.innerHTML = `<div>${card.val}</div><div class="text-2xl md:text-3xl mt-1">${card.suit}</div>`;
                 
                 if (currentTurn === 0 && isValid) {
-                    const liftAmount = isMobile ? 28 : 20;
-                    const scaleAmount = isMobile ? 1.15 : 1;
+                    const liftAmount = isMobile ? 35 : 20;
+                    const scaleAmount = isMobile ? 1.1 : 1;
                     
                     const handleHoverIn = () => {
                         cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY - liftAmount}px) scale(${scaleAmount})`;
