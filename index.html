@@ -198,6 +198,27 @@
         .bid-btn.rekontra { background: #805ad5; border-color: #6b46c1; }
         .bid-btn.rekontra:hover { background: #6b46c1; }
 
+        /* Seat Selector Cards */
+        .seat-card {
+            background: #2d3748;
+            border: 2px dashed #4a5568;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .seat-card.occupied {
+            border-style: solid;
+            border-color: #48bb78;
+            background: #1a202c;
+            cursor: default;
+        }
+        .seat-card.my-seat {
+            border-color: #3182ce;
+            background: #2b6cb0;
+        }
+
         /* Dealer Badge */
         .dealer-badge {
             position: absolute;
@@ -382,6 +403,53 @@
         <p id="lobby-error" class="text-red-400 mt-2 text-sm hidden"></p>
     </div>
 
+    <!-- Multiplayer Seat Selection View -->
+    <div id="seat-select-view" class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg text-center hidden">
+        <h2 class="text-2xl font-bold text-green-400 mb-2">Избор на отбор и място</h2>
+        <p class="text-gray-400 text-sm mb-4">Код на стаята: <span id="seat-room-code" class="text-yellow-400 font-mono font-bold text-base"></span></p>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <!-- Team 1 -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                <h3 class="text-lg font-bold text-green-400 mb-3 border-b border-gray-700 pb-1">ОТБОР 1 (НИЕ)</h3>
+                <div class="flex flex-col gap-3">
+                    <div id="seat-btn-0" class="seat-card">
+                        <div class="text-xs text-gray-400">Място 1 (Юг)</div>
+                        <div class="font-bold text-sm seat-name">Свободно</div>
+                    </div>
+                    <div id="seat-btn-2" class="seat-card">
+                        <div class="text-xs text-gray-400">Място 3 (Север)</div>
+                        <div class="font-bold text-sm seat-name">Свободно</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team 2 -->
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                <h3 class="text-lg font-bold text-red-400 mb-3 border-b border-gray-700 pb-1">ОТБОР 2 (ВИЕ)</h3>
+                <div class="flex flex-col gap-3">
+                    <div id="seat-btn-1" class="seat-card">
+                        <div class="text-xs text-gray-400">Място 2 (Изток)</div>
+                        <div class="font-bold text-sm seat-name">Свободно</div>
+                    </div>
+                    <div id="seat-btn-3" class="seat-card">
+                        <div class="text-xs text-gray-400">Място 4 (Запад)</div>
+                        <div class="font-bold text-sm seat-name">Свободно</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3 justify-center">
+            <button id="btn-start-multiplayer" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
+                Влез на масата
+            </button>
+            <button id="btn-cancel-seat-select" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition">
+                Отказ
+            </button>
+        </div>
+    </div>
+
     <!-- Game View -->
     <div id="game-view" class="w-full h-full flex flex-col p-4 relative">
         
@@ -510,13 +578,13 @@
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
         const fbConfig = {
-  apiKey: "AIzaSyDIUyQGyL5mrBIgkUdAVqX3Bpv_ZhwKsI0",
-  authDomain: "belotegame-aa2f3.firebaseapp.com",
-  projectId: "belotegame-aa2f3",
-  storageBucket: "belotegame-aa2f3.firebasestorage.app",
-  messagingSenderId: "182833866712",
-  appId: "1:182833866712:web:f434a15667735fc3b134ad"
-};
+            apiKey: "AIzaSyDIUyQGyL5mrBIgkUdAVqX3Bpv_ZhwKsI0",
+            authDomain: "belotegame-aa2f3.firebaseapp.com",
+            projectId: "belotegame-aa2f3",
+            storageBucket: "belotegame-aa2f3.firebasestorage.app",
+            messagingSenderId: "182833866712",
+            appId: "1:182833866712:web:f434a15667735fc3b134ad"
+        };
         const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         const app = initializeApp(fbConfig);
@@ -563,6 +631,7 @@
 
         // UI Elements
         const lobbyView = document.getElementById('lobby-view');
+        const seatSelectView = document.getElementById('seat-select-view');
         const gameView = document.getElementById('game-view');
         const playerNameInput = document.getElementById('player-name');
         const errorMsg = document.getElementById('lobby-error');
@@ -579,6 +648,10 @@
         const suits = ['♠', '♥', '♦', '♣'];
         const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         let deck = [];
+
+        function getRoomPath(code) {
+            return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+        }
 
         function initDeck() {
             deck = [];
@@ -680,8 +753,214 @@
             });
         }
 
-        /* --- TRAINING MODE LOGIC --- */
-        
+        function updateDealerVisuals() {
+            ['bottom', 'right', 'top', 'left'].forEach(pos => {
+                const badge = document.getElementById(`dealer-${pos}`);
+                if (badge) badge.style.display = 'none';
+            });
+
+            const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
+            const activeBadge = document.getElementById(`dealer-${posMap[dealerIndex]}`);
+            if (activeBadge) activeBadge.style.display = 'flex';
+        }
+
+        function updateTurnVisuals() {
+            const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
+            ['bottom', 'right', 'top', 'left'].forEach(pos => {
+                const seat = document.getElementById(`seat-${pos}`);
+                if (seat) seat.style.borderColor = '#4a5568';
+            });
+
+            if (currentTurn >= 0 && currentTurn <= 3) {
+                const activeSeat = document.getElementById(`seat-${posMap[currentTurn]}`);
+                if (activeSeat) activeSeat.style.borderColor = '#48bb78';
+            }
+        }
+
+        document.getElementById('btn-create').addEventListener('click', async () => {
+            if (!currentUser) return;
+            const name = playerNameInput.value.trim() || 'Играч';
+            localStorage.setItem('belote_name', name);
+
+            const code = Math.random().toString(36).substring(2, 7).toUpperCase();
+            const roomRef = getRoomPath(code);
+
+            try {
+                const initialSeats = [null, null, null, null];
+                await setDoc(roomRef, {
+                    createdAt: Date.now(),
+                    status: 'waiting',
+                    seats: initialSeats
+                });
+                joinSeatSelectionUI(code);
+            } catch (err) {
+                showError("Грешка при създаване: " + err.message);
+            }
+        });
+
+        document.getElementById('btn-join').addEventListener('click', async () => {
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (!code || !currentUser) return;
+            const name = playerNameInput.value.trim() || 'Играч';
+            localStorage.setItem('belote_name', name);
+
+            const roomRef = getRoomPath(code);
+            try {
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) return showError("Стаята не съществува!");
+
+                joinSeatSelectionUI(code);
+            } catch (err) {
+                showError("Грешка при присъединяване: " + err.message);
+            }
+        });
+
+        function joinSeatSelectionUI(code) {
+            resetGameState();
+            isTrainingMode = false;
+            currentRoomCode = code;
+
+            lobbyView.style.display = 'none';
+            seatSelectView.style.display = 'block';
+            document.getElementById('seat-room-code').textContent = code;
+
+            listenToRoomSeatSelection(code);
+        }
+
+        function listenToRoomSeatSelection(code) {
+            unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
+                if (!docSnap.exists()) {
+                    showModal("Внимание", "Стаята беше затворена.", () => {
+                        leaveRoomAndReset();
+                    });
+                    return;
+                }
+                renderSeatSelectionView(docSnap.data());
+            }, (error) => console.error("Listen seat error:", error));
+        }
+
+        let currentRoomSeats = [null, null, null, null];
+
+        function renderSeatSelectionView(room) {
+            currentRoomSeats = room.seats || [null, null, null, null];
+            
+            mySeatIndex = currentRoomSeats.findIndex(s => s && s.uid === currentUser.uid);
+
+            [0, 1, 2, 3].forEach(seatIdx => {
+                const seatBtn = document.getElementById(`seat-btn-${seatIdx}`);
+                const seatNameEl = seatBtn.querySelector('.seat-name');
+                const player = currentRoomSeats[seatIdx];
+
+                seatBtn.onclick = null;
+
+                if (player) {
+                    if (player.uid === currentUser.uid) {
+                        seatBtn.className = 'seat-card my-seat';
+                        seatNameEl.textContent = `${player.name} (Ти)`;
+                    } else {
+                        seatBtn.className = 'seat-card occupied';
+                        seatNameEl.textContent = player.name;
+                    }
+                } else {
+                    seatBtn.className = 'seat-card hover:border-green-400 hover:bg-gray-700';
+                    seatNameEl.textContent = 'Свободно (Кликни)';
+                    seatBtn.onclick = () => selectSeat(seatIdx);
+                }
+            });
+
+            const btnStart = document.getElementById('btn-start-multiplayer');
+            if (mySeatIndex !== -1) {
+                btnStart.disabled = false;
+            } else {
+                btnStart.disabled = true;
+            }
+        }
+
+        async function selectSeat(targetSeatIndex) {
+            if (!currentRoomCode || !currentUser) return;
+            const name = playerNameInput.value.trim() || 'Играч';
+            const roomRef = getRoomPath(currentRoomCode);
+
+            try {
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) return;
+
+                const seats = docSnap.data().seats || [null, null, null, null];
+                
+                const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
+                if (existingIndex !== -1) {
+                    seats[existingIndex] = null;
+                }
+
+                if (!seats[targetSeatIndex]) {
+                    seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
+                    await updateDoc(roomRef, { seats: seats });
+                } else {
+                    showError("Мястото вече бе заето от друг!");
+                }
+            } catch (err) {
+                showError("Грешка при избор на място: " + err.message);
+            }
+        }
+
+        document.getElementById('btn-start-multiplayer').addEventListener('click', () => {
+            if (mySeatIndex === -1) return;
+
+            if (unsubscribeRoom) {
+                unsubscribeRoom();
+                unsubscribeRoom = null;
+            }
+
+            seatSelectView.style.display = 'none';
+            gameView.style.display = 'flex';
+            document.getElementById('display-room-code').textContent = currentRoomCode;
+            document.getElementById('game-subtitle').textContent = 'Споделете този код с приятели';
+
+            listenToRoom(currentRoomCode);
+        });
+
+        document.getElementById('btn-cancel-seat-select').addEventListener('click', () => {
+            leaveRoomAndReset();
+        });
+
+        async function leaveRoomAndReset() {
+            const codeToLeave = currentRoomCode;
+            const seatToLeave = mySeatIndex;
+
+            resetGameState();
+
+            if (codeToLeave && currentUser) {
+                try {
+                    const roomRef = getRoomPath(codeToLeave);
+                    const snap = await getDoc(roomRef);
+                    if (snap.exists()) {
+                        const seats = snap.data().seats;
+                        if (seatToLeave !== -1 && seats[seatToLeave] && seats[seatToLeave].uid === currentUser.uid) {
+                            seats[seatToLeave] = null;
+                            await updateDoc(roomRef, { seats: seats });
+                        }
+                    }
+                } catch(e) { console.error(e); }
+            }
+
+            isTrainingMode = false;
+            currentRoomCode = null;
+            lobbyView.style.display = 'block';
+            seatSelectView.style.display = 'none';
+            gameView.style.display = 'none';
+        }
+
+        function listenToRoom(code) {
+            unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
+                if (!docSnap.exists()) {
+                    showModal("Внимание", "Стаята беше затворена.", () => {
+                        leaveRoomAndReset();
+                    });
+                    return;
+                }
+            }, (error) => console.error("Listen room error:", error));
+        }
+
         document.getElementById('btn-training').addEventListener('click', () => {
             resetGameState();
             isTrainingMode = true;
@@ -1232,7 +1511,6 @@
                 const rotate = offset * (isMobile ? 2.5 : 5);
                 const translateY = Math.abs(offset) * (isMobile ? 1.2 : 2);
                 
-                // Изчисляваме динамичен марджин спрямо броя карти, за да има отчетлив разстояние
                 if (isMobile) {
                     if (hand.length > 6) {
                         cardEl.style.margin = "0 -8px";
@@ -1391,7 +1669,6 @@
                 if (isAllTrumps) {
                      switch(card.val) { case 'J': power += 20; break; case '9': power += 14; break; case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case '8': power += 2; break; case '7': power += 1; break; }
                 } else {
-                     // Не-козова боя: A > 10 > K > Q > J > 9 > 8 > 7
                      switch(card.val) { case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case 'J': power += 2; break; case '9': power += 1.5; break; case '8': power += 1; break; case '7': power += 0.5; break; }
                 }
             }
@@ -1529,270 +1806,58 @@
             let usPoints = 0;
             let themPoints = 0;
 
-            // Базова стойност на играта: Боя = 16 | Без коз = 26 | На коньете = 26
-            let baseGameValue = 16;
-            if (currentContract === 'На коньете' || currentContract === 'Без коз') {
-                baseGameValue = 26;
-            }
+            let gameBase = 16;
+            if (currentContract === 'Без коз') gameBase = 26;
+            else if (currentContract === 'На коньете') gameBase = 24;
 
-            const totalDeclUsRounded = Math.round(declPoints.us / 10);
-            const totalDeclThemRounded = Math.round(declPoints.them / 10);
+            let totalRoundRaw = usRaw + themRaw;
 
-            if (gameMultiplier > 1) {
-                // При Контра (х2) или Реконтра (х4) се вземат базовите точки * множителя
-                const fullGamePoints = baseGameValue * gameMultiplier;
-
-                if (isCallerUs) {
-                    if (usRaw > themRaw) { // Изкарана Контра!
-                        usPoints = fullGamePoints + totalDeclUsRounded;
-                        themPoints = totalDeclThemRounded;
-                    } else { // Вкарана Контра! Падналият пише 0, другите вземат играта и ВСИЧКИ анонси.
-                        usPoints = 0;
-                        themPoints = fullGamePoints + totalDeclUsRounded + totalDeclThemRounded;
-                    }
+            if (isCallerUs) {
+                if (usRaw > themRaw) {
+                    usPoints = Math.round(usRaw / 10) * gameMultiplier;
+                    themPoints = Math.round(themRaw / 10) * gameMultiplier;
                 } else {
-                    if (themRaw > usRaw) { // Изкарана Контра!
-                        themPoints = fullGamePoints + totalDeclThemRounded;
-                        usPoints = totalDeclUsRounded;
-                    } else { // Вкарана Контра!
-                        themPoints = 0;
-                        usPoints = fullGamePoints + totalDeclUsRounded + totalDeclThemRounded;
-                    }
+                    usPoints = 0;
+                    themPoints = Math.round(totalRoundRaw / 10) * gameMultiplier;
                 }
             } else {
-                // Обикновена игра (Без Контра)
-                if (isCallerUs) {
-                    if (usRaw < themRaw) { // Вътре - всички точки и анонси отиват за противника
-                        usPoints = 0;
-                        themPoints = Math.round((usRaw + themRaw) / 10);
-                    } else if (usRaw === themRaw) { // Висяща - Противникът си пише неговите
-                        usPoints = 0;
-                        themPoints = Math.round(themRaw / 10);
-                    } else { // Изкарана
-                        usPoints = Math.round(usRaw / 10);
-                        themPoints = Math.round(themRaw / 10);
-                    }
+                if (themRaw > usRaw) {
+                    usPoints = Math.round(usRaw / 10) * gameMultiplier;
+                    themPoints = Math.round(themRaw / 10) * gameMultiplier;
                 } else {
-                    if (themRaw < usRaw) { // Вътре
-                        themPoints = 0;
-                        usPoints = Math.round((usRaw + themRaw) / 10);
-                    } else if (themRaw === usRaw) { // Висяща
-                        themPoints = 0;
-                        usPoints = Math.round(usRaw / 10);
-                    } else { // Изкарана
-                        usPoints = Math.round(usRaw / 10);
-                        themPoints = Math.round(themRaw / 10);
-                    }
+                    usPoints = Math.round(totalRoundRaw / 10) * gameMultiplier;
+                    themPoints = 0;
                 }
             }
 
             globalScore.us += usPoints;
             globalScore.them += themPoints;
-            
+
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
-            let multText = gameMultiplier === 2 ? ' <span class="text-yellow-400 font-bold">(КОНТРА)</span>' : gameMultiplier === 4 ? ' <span class="text-purple-400 font-bold">(РЕКОНТРА)</span>' : '';
-            let msg = `<b>Сурови точки от картите и анонсите:</b>\n`;
-            msg += `Ние: <span class="text-green-400">${usRaw}</span> <i>(вкл. Анонси: ${declPoints.us})</i> | Вие: <span class="text-red-400">${themRaw}</span> <i>(вкл. Анонси: ${declPoints.them})</i>\n`;
-            
-            if (declResult.winner === 0) msg += `<span class="text-blue-400 text-xs">-> Анонсите на "Ние" са по-силни.</span>\n`;
-            else if (declResult.winner === 1) msg += `<span class="text-blue-400 text-xs">-> Анонсите на "Вие" са по-силни.</span>\n`;
+            let resultMsg = `Раздаването приключи!<br><br>Точки за раздаването:<br>НИЕ: ${usPoints} (сурови: ${usRaw})<br>ВИЕ: ${themPoints} (сурови: ${themRaw})<br><br>Общ резултат:<br>NIE: ${globalScore.us} | VIE: ${globalScore.them}`;
 
-            msg += `\n<b>Записани точки за мача${multText}:</b>\nНие: <span class="text-green-400 font-bold">${usPoints}</span> | Вие: <span class="text-red-400 font-bold">${themPoints}</span>`;
-            
-            if ((isCallerUs && usRaw <= themRaw) || (!isCallerUs && themRaw <= usRaw)) {
-                msg += "\n\n<span class='text-red-500 font-bold'>(ВКАРАНИ/ВИСЯЩА - Противникът взема всичко!)</span>";
-            }
-
-            showModal("Край на раздаването", msg, () => {
-                if (!isTrainingMode) return;
-                if (globalScore.us >= 151 || globalScore.them >= 151) {
-                    let winner = globalScore.us > globalScore.them ? "Ние (Играч и Север)" : "Вие (Изток и Запад)";
-                    showModal("КРАЙ НА ИГРАТА!", `Победител: ${winner}\nКраен резултат: ${globalScore.us} - ${globalScore.them}`, () => {
-                        if (!isTrainingMode) return;
-                        globalScore = { us: 0, them: 0 };
-                        document.getElementById('score-us').textContent = '0';
-                        document.getElementById('score-them').textContent = '0';
-                        dealerIndex = (dealerIndex + 1) % 4;
-                        startTrainingGame();
-                    });
-                } else {
+            if (globalScore.us >= 151 || globalScore.them >= 151) {
+                const isWinnerUs = globalScore.us > globalScore.them;
+                resultMsg += `<br><br><b style="color:#48bb78; font-size:18px;">${isWinnerUs ? 'ПОБЕДА ЗА ВАШИЯ ОТБОР!' : 'ПОРAЖЕНИЕ! ВРАГЪТ СПЕЧЕЛИ!'}</b>`;
+                showModal("Край на Играта", resultMsg, () => {
+                    globalScore = { us: 0, them: 0 };
+                    document.getElementById('score-us').textContent = '0';
+                    document.getElementById('score-them').textContent = '0';
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
-                }
-            });
-        }
-
-        function updateTurnVisuals() {
-            ['bottom', 'right', 'top', 'left'].forEach(pos => {
-                document.getElementById(`seat-${pos}`).style.borderColor = '#4a5568';
-                document.getElementById(`seat-${pos}`).style.boxShadow = 'none';
-            });
-            
-            if (isTrainingMode && currentTurn >= 0 && currentTurn <= 3) {
-                const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
-                const activeSeat = document.getElementById(`seat-${posMap[currentTurn]}`);
-                if (activeSeat) {
-                    activeSeat.style.borderColor = '#48bb78';
-                    activeSeat.style.boxShadow = '0 0 15px rgba(72, 187, 120, 0.7)';
-                }
-            }
-        }
-
-        function updateDealerVisuals() {
-            ['bottom', 'right', 'top', 'left'].forEach(pos => {
-                const badge = document.getElementById(`dealer-${pos}`);
-                if (badge) badge.style.display = 'none';
-            });
-            
-            if (isTrainingMode && dealerIndex >= 0 && dealerIndex <= 3) {
-                const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
-                const badge = document.getElementById(`dealer-${posMap[dealerIndex]}`);
-                if (badge) badge.style.display = 'flex';
-            }
-        }
-
-        /* --- MULTIPLAYER LOGIC --- */
-
-        function getRoomPath(code) {
-            return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
-        }
-
-        document.getElementById('btn-create').addEventListener('click', async () => {
-            if (!currentUser) return showError("Изчакайте връзка със сървъра...");
-            const name = playerNameInput.value.trim() || 'Играч';
-            localStorage.setItem('belote_name', name);
-
-            const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-            const roomRef = getRoomPath(code);
-
-            try {
-                await setDoc(roomRef, {
-                    createdAt: Date.now(),
-                    status: 'waiting',
-                    seats: [{ uid: currentUser.uid, name: name }, null, null, null]
                 });
-                joinMultiplayerUI(code);
-            } catch (err) {
-                showError("Грешка при създаване: " + err.message);
-            }
-        });
-
-        document.getElementById('btn-join').addEventListener('click', async () => {
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (!code || !currentUser) return;
-            const name = playerNameInput.value.trim() || 'Играч';
-            localStorage.setItem('belote_name', name);
-
-            const roomRef = getRoomPath(code);
-            try {
-                const docSnap = await getDoc(roomRef);
-                if (!docSnap.exists()) return showError("Стаята не съществува!");
-
-                const seats = docSnap.data().seats;
-                let seatIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
-                
-                if (seatIndex === -1) {
-                    seatIndex = seats.findIndex(s => s === null);
-                    if (seatIndex === -1) return showError("Стаята е пълна!");
-                    seats[seatIndex] = { uid: currentUser.uid, name: name };
-                    await updateDoc(roomRef, { seats: seats });
-                }
-                joinMultiplayerUI(code);
-            } catch (err) {
-                showError("Грешка при присъединяване: " + err.message);
-            }
-        });
-
-        function joinMultiplayerUI(code) {
-            resetGameState();
-            isTrainingMode = false;
-            currentRoomCode = code;
-            lobbyView.style.display = 'none';
-            gameView.style.display = 'flex';
-            document.getElementById('display-room-code').textContent = code;
-            document.getElementById('game-subtitle').textContent = 'Споделете този код с приятели';
-            
-            listenToRoom(code);
-        }
-
-        function listenToRoom(code) {
-            unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
-                if (!docSnap.exists()) {
-                    showModal("Внимание", "Стаята беше затворена.", () => document.getElementById('btn-leave').click());
-                    return;
-                }
-                updateMultiplayerTable(docSnap.data());
-            }, (error) => console.error("Listen error:", error));
-        }
-
-        function updateMultiplayerTable(room) {
-            if (isTrainingMode) return;
-            const seats = room.seats;
-            mySeatIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
-            
-            if (mySeatIndex === -1) return document.getElementById('btn-leave').click();
-
-            const relativePositions = [
-                { id: 'seat-bottom', nameId: 'name-bottom', offset: 0 },
-                { id: 'seat-right', nameId: 'name-right', offset: 1 },
-                { id: 'seat-top', nameId: 'name-top', offset: 2 },
-                { id: 'seat-left', nameId: 'name-left', offset: 3 },
-            ];
-
-            let playersCount = 0;
-            relativePositions.forEach(pos => {
-                const targetIndex = (mySeatIndex + pos.offset) % 4;
-                const player = seats[targetIndex];
-                const seatEl = document.getElementById(pos.id);
-                
-                if (player) {
-                    playersCount++;
-                    seatEl.classList.remove('hidden');
-                    document.getElementById(pos.nameId).textContent = player.name;
-                    seatEl.style.borderColor = '#4a5568';
-                    seatEl.style.boxShadow = 'none';
-                } else {
-                    seatEl.classList.add('hidden');
-                }
-            });
-
-            if (playersCount === 4) {
-                waitingMsg.textContent = "Играта е готова за начало!";
-                document.getElementById('center-info').style.opacity = '1';
             } else {
-                waitingMsg.textContent = `Чакане на играчи... (${playersCount}/4)`;
-                document.getElementById('center-info').style.opacity = '0.5';
+                showModal("Резултат от Раздаването", resultMsg, () => {
+                    dealerIndex = (dealerIndex + 1) % 4;
+                    startTrainingGame();
+                });
             }
         }
 
-        // Leave Button
         document.getElementById('btn-leave').addEventListener('click', async () => {
-            const codeToLeave = currentRoomCode;
-            const seatToLeave = mySeatIndex;
-            const wasMultiplayer = !isTrainingMode && codeToLeave && currentUser && seatToLeave !== -1;
-
-            resetGameState();
-
-            if (wasMultiplayer) {
-                try {
-                    const roomRef = getRoomPath(codeToLeave);
-                    const snap = await getDoc(roomRef);
-                    if (snap.exists()) {
-                        const seats = snap.data().seats;
-                        if(seats[seatToLeave] && seats[seatToLeave].uid === currentUser.uid) {
-                             seats[seatToLeave] = null;
-                             await updateDoc(roomRef, { seats: seats });
-                        }
-                    }
-                } catch(e) { console.error(e); }
-            }
-            
-            isTrainingMode = false;
-            currentRoomCode = null;
-            lobbyView.style.display = 'block';
-            gameView.style.display = 'none';
+            await leaveRoomAndReset();
         });
 
         initAuth();
