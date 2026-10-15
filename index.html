@@ -485,19 +485,19 @@
                 <div id="seat-top" class="seat seat-top hidden">
                     <div class="dealer-badge" id="dealer-top">D</div>
                     <div class="speech-bubble" id="bubble-top"></div>
-                    <div class="font-bold truncate text-sm" id="name-top">Бот</div>
+                    <div class="font-bold truncate text-sm" id="name-top">Изчаква...</div>
                 </div>
                 
                 <div id="seat-left" class="seat seat-left hidden">
                     <div class="dealer-badge" id="dealer-left">D</div>
                     <div class="speech-bubble" id="bubble-left"></div>
-                    <div class="font-bold truncate text-sm" id="name-left">Бот</div>
+                    <div class="font-bold truncate text-sm" id="name-left">Изчаква...</div>
                 </div>
                 
                 <div id="seat-right" class="seat seat-right hidden">
                     <div class="dealer-badge" id="dealer-right">D</div>
                     <div class="speech-bubble" id="bubble-right"></div>
-                    <div class="font-bold truncate text-sm" id="name-right">Бот</div>
+                    <div class="font-bold truncate text-sm" id="name-right">Изчаква...</div>
                 </div>
 
                 <div id="seat-bottom" class="seat seat-bottom hidden">
@@ -916,8 +916,43 @@
             document.getElementById('display-room-code').textContent = currentRoomCode;
             document.getElementById('game-subtitle').textContent = 'Споделете този код с приятели';
 
+            // Покажи местата на масата и обнови имената според заетото място
+            updateMultiplayerSeatNames(currentRoomSeats);
+
             listenToRoom(currentRoomCode);
         });
+
+        function updateMultiplayerSeatNames(seats) {
+            const seatPositions = ['bottom', 'right', 'top', 'left'];
+            
+            // Завсеки от 4-те визуали позиционни ъгъла (0=Юг/Аз, 1=Изток, 2=Север, 3=Запад)
+            for (let relPos = 0; relPos < 4; relPos++) {
+                // Пресмятаме реалния индекс на мястото спрямо избраното от мен място (mySeatIndex)
+                const absIndex = (mySeatIndex + relPos) % 4;
+                const posName = seatPositions[relPos];
+                
+                const seatElement = document.getElementById(`seat-${posName}`);
+                const nameElement = document.getElementById(`name-${posName}`);
+                
+                if (seatElement && nameElement) {
+                    seatElement.classList.remove('hidden');
+                    const player = seats[absIndex];
+                    
+                    if (player && player.name) {
+                        if (absIndex === mySeatIndex) {
+                            nameElement.textContent = `${player.name} (Вие)`;
+                            nameElement.className = "font-bold truncate text-sm text-green-400";
+                        } else {
+                            nameElement.textContent = player.name;
+                            nameElement.className = "font-bold truncate text-sm text-white";
+                        }
+                    } else {
+                        nameElement.textContent = "Свободно";
+                        nameElement.className = "font-bold truncate text-sm text-gray-400 italic";
+                    }
+                }
+            }
+        }
 
         document.getElementById('btn-cancel-seat-select').addEventListener('click', () => {
             leaveRoomAndReset();
@@ -957,6 +992,11 @@
                         leaveRoomAndReset();
                     });
                     return;
+                }
+                const data = docSnap.data();
+                if (data && data.seats) {
+                    currentRoomSeats = data.seats;
+                    updateMultiplayerSeatNames(data.seats);
                 }
             }, (error) => console.error("Listen room error:", error));
         }
