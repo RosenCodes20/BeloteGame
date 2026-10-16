@@ -1856,27 +1856,51 @@
             let usPoints = 0;
             let themPoints = 0;
 
-            let gameBase = 16;
-            if (currentContract === 'Без коз') gameBase = 26;
-            else if (currentContract === 'На коньете') gameBase = 24;
-
             let totalRoundRaw = usRaw + themRaw;
 
-            if (isCallerUs) {
-                if (usRaw > themRaw) {
-                    usPoints = Math.round(usRaw / 10) * gameMultiplier;
-                    themPoints = Math.round(themRaw / 10) * gameMultiplier;
+            // Логика за точки при Контра (x2) и Реконтра (x4)
+            if (gameMultiplier > 1) {
+                const roundedTotal = Math.round(totalRoundRaw / 10) * gameMultiplier;
+                
+                if (isCallerUs) {
+                    // Ако НИЕ сме викали и сме изкарали (usRaw > themRaw) -> вземаме всички точки
+                    if (usRaw > themRaw) {
+                        usPoints = roundedTotal;
+                        themPoints = 0;
+                    } else {
+                        // Ако сме паднали -> ВИЕ вземате всички точки
+                        usPoints = 0;
+                        themPoints = roundedTotal;
+                    }
                 } else {
-                    usPoints = 0;
-                    themPoints = Math.round(totalRoundRaw / 10) * gameMultiplier;
+                    // Ако ВИЕ сте викали и сте изкарали (themRaw > usRaw) -> вземате всички точки
+                    if (themRaw > usRaw) {
+                        usPoints = 0;
+                        themPoints = roundedTotal;
+                    } else {
+                        // Ако сте паднали -> НИЕ вземаме всички точки
+                        usPoints = roundedTotal;
+                        themPoints = 0;
+                    }
                 }
             } else {
-                if (themRaw > usRaw) {
-                    usPoints = Math.round(usRaw / 10) * gameMultiplier;
-                    themPoints = Math.round(themRaw / 10) * gameMultiplier;
+                // Стандартно точкуване без Контра / Реконтра
+                if (isCallerUs) {
+                    if (usRaw > themRaw) {
+                        usPoints = Math.round(usRaw / 10);
+                        themPoints = Math.round(themRaw / 10);
+                    } else {
+                        usPoints = 0;
+                        themPoints = Math.round(totalRoundRaw / 10);
+                    }
                 } else {
-                    usPoints = Math.round(totalRoundRaw / 10) * gameMultiplier;
-                    themPoints = 0;
+                    if (themRaw > usRaw) {
+                        usPoints = Math.round(usRaw / 10);
+                        themPoints = Math.round(themRaw / 10);
+                    } else {
+                        usPoints = Math.round(totalRoundRaw / 10);
+                        themPoints = 0;
+                    }
                 }
             }
 
