@@ -536,9 +536,9 @@
 
     <!-- Custom Message Modal -->
     <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-        <div class="bg-gray-800 border-2 border-green-500 rounded-xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <h2 id="modal-title" class="text-2xl font-bold text-white mb-4">Съобщение</h2>
-            <p id="modal-msg" class="text-gray-300 mb-6">Текст</p>
+        <div class="bg-gray-800 border-2 border-green-500 rounded-xl p-6 max-w-md w-full text-center shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 id="modal-title" class="text-2xl font-bold text-white mb-3">Съобщение</h2>
+            <div id="modal-msg" class="text-gray-300 mb-6 text-left space-y-2 text-sm md:text-base">Текст</div>
             <button id="modal-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition">
                 Добре
             </button>
@@ -663,9 +663,9 @@
             deck.sort(() => Math.random() - 0.5);
         }
 
-        function showModal(title, msg, callback) {
+        function showModal(title, msgHtml, callback) {
             document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-msg').innerHTML = msg.replace(/\n/g, '<br>');
+            document.getElementById('modal-msg').innerHTML = msgHtml;
             modal.style.display = 'flex';
             document.getElementById('modal-btn').onclick = () => {
                 modal.style.display = 'none';
@@ -916,18 +916,14 @@
             document.getElementById('display-room-code').textContent = currentRoomCode;
             document.getElementById('game-subtitle').textContent = 'Споделете този код с приятели';
 
-            // Покажи местата на масата и обнови имената според заетото място
             updateMultiplayerSeatNames(currentRoomSeats);
-
             listenToRoom(currentRoomCode);
         });
 
         function updateMultiplayerSeatNames(seats) {
             const seatPositions = ['bottom', 'right', 'top', 'left'];
             
-            // Завсеки от 4-те визуали позиционни ъгъла (0=Юг/Аз, 1=Изток, 2=Север, 3=Запад)
             for (let relPos = 0; relPos < 4; relPos++) {
-                // Пресмятаме реалния индекс на мястото спрямо избраното от мен място (mySeatIndex)
                 const absIndex = (mySeatIndex + relPos) % 4;
                 const posName = seatPositions[relPos];
                 
@@ -1322,9 +1318,10 @@
         function getSeqDeclaration(seq, suit) {
             const topVal = seq[seq.length - 1].val;
             const topValIdx = seqOrder.indexOf(topVal);
-            if (seq.length === 3) return { type: 'Терца', name: 'Терца', points: 20, length: 3, topValIndex: topValIdx, suit: suit, isCarre: false };
-            if (seq.length === 4) return { type: 'Кварта', name: 'Кварта', points: 50, length: 4, topValIndex: topValIdx, suit: suit, isCarre: false };
-            return { type: 'Квинта', name: 'Квинта', points: 100, length: 5, topValIndex: topValIdx, suit: suit, isCarre: false };
+            const suitName = suit ? ` (${suit})` : '';
+            if (seq.length === 3) return { type: 'Терца', name: `Терца до ${topVal}${suitName}`, points: 20, length: 3, topValIndex: topValIdx, suit: suit, isCarre: false };
+            if (seq.length === 4) return { type: 'Кварта', name: `Кварта до ${topVal}${suitName}`, points: 50, length: 4, topValIndex: topValIdx, suit: suit, isCarre: false };
+            return { type: 'Квинта', name: `Квинта до ${topVal}${suitName}`, points: 100, length: 5, topValIndex: topValIdx, suit: suit, isCarre: false };
         }
 
         function detectDeclarations(hand) {
@@ -1599,21 +1596,15 @@
             const playedCard = trainingHands[playerIndex][cardIndex];
             let isBeloteSituation = false;
 
-            // Логика за Белот:
-            // Белот съществува САМО ако играта НЕ Е "Без коз"
             if (currentContract !== 'Без коз') {
                 const isAllTrumps = currentContract === 'На коньете';
-                // Ако играта е конкретна боя (♣, ♦, ♥, ♠), вземаме първия символ (боята на коза)
                 const trumpSuit = (!isAllTrumps) ? currentContract.charAt(0) : null;
                 
-                // Картите трябва да са Поп (K) или Дама (Q)
                 if (playedCard.val === 'K' || playedCard.val === 'Q') {
-                    // Важно: Картите трябва да са от КОЗОВАТА боя (при игра на боя) или от произволна боя (при "На коньете")
                     const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
                     
                     if (isTrumpCard) {
                         const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
-                        // Проверяваме дали играчът държи и другата съответна карта от СЪЩАТА боя
                         const hasOther = trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
                         if (hasOther) isBeloteSituation = true;
                     }
@@ -1833,7 +1824,12 @@
             declarationPoints.us += belotePointsRound.us;
             declarationPoints.them += belotePointsRound.them;
 
-            return { points: declarationPoints, winner: winningTeam };
+            return { 
+                points: declarationPoints, 
+                winner: winningTeam,
+                usDecls,
+                themDecls
+            };
         }
 
         function endRoundAndScore() {
@@ -1841,16 +1837,19 @@
             const declResult = resolveDeclarations();
             const declPoints = declResult.points;
 
-            let usRaw = roundScore.us + declPoints.us;
-            let themRaw = roundScore.them + declPoints.them;
+            let usCardPoints = roundScore.us;
+            let themCardPoints = roundScore.them;
 
-            if (tricksWon.us === 8) usRaw += 90;
-            if (tricksWon.them === 8) themRaw += 90;
+            if (tricksWon.us === 8) usCardPoints += 90;
+            if (tricksWon.them === 8) themCardPoints += 90;
 
             if (currentContract === 'Без коз') {
-                usRaw = (roundScore.us * 2) + (tricksWon.us === 8 ? 90 : 0) + declPoints.us;
-                themRaw = (roundScore.them * 2) + (tricksWon.them === 8 ? 90 : 0) + declPoints.them;
+                usCardPoints = (roundScore.us * 2) + (tricksWon.us === 8 ? 90 : 0);
+                themCardPoints = (roundScore.them * 2) + (tricksWon.them === 8 ? 90 : 0);
             }
+
+            let usRaw = usCardPoints + declPoints.us;
+            let themRaw = themCardPoints + declPoints.them;
 
             let isCallerUs = (callerTeam === 0);
             let usPoints = 0;
@@ -1858,38 +1857,31 @@
 
             let totalRoundRaw = usRaw + themRaw;
 
-            // Коректно закръгляне на точките от играта
             let baseUsPoints = Math.round(usRaw / 10);
             let baseThemPoints = Math.round(themRaw / 10);
             let baseTotalPoints = Math.round(totalRoundRaw / 10);
 
-            // Логика за точки при Контра (x2) и Реконтра (x4)
             if (gameMultiplier > 1) {
                 const multipliedTotal = baseTotalPoints * gameMultiplier;
                 
                 if (isCallerUs) {
-                    // Ако НИЕ сме викали и сме изкарали (usRaw > themRaw) -> вземаме всички точки умножени
                     if (usRaw > themRaw) {
                         usPoints = multipliedTotal;
                         themPoints = 0;
                     } else {
-                        // Ако сме паднали -> ВИЕ вземате всички точки умножени
                         usPoints = 0;
                         themPoints = multipliedTotal;
                     }
                 } else {
-                    // Ако ВИЕ сте викали и сте изкарали (themRaw > usRaw) -> вземате всички точки умножени
                     if (themRaw > usRaw) {
                         usPoints = 0;
                         themPoints = multipliedTotal;
                     } else {
-                        // Ако сте паднали -> НИЕ вземаме всички точки умножени
                         usPoints = multipliedTotal;
                         themPoints = 0;
                     }
                 }
             } else {
-                // Стандартно точкуване без Контра / Реконтра
                 if (isCallerUs) {
                     if (usRaw > themRaw) {
                         usPoints = baseUsPoints;
@@ -1915,11 +1907,62 @@
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
-            let resultMsg = `Раздаването приключи!<br><br>Точки за раздаването:<br>НИЕ: ${usPoints} (сурови: ${usRaw})<br>ВИЕ: ${themPoints} (сурови: ${themRaw})<br><br>Общ резултат:<br>NIE: ${globalScore.us} | VIE: ${globalScore.them}`;
+            // Изграждане на подробно съобщение за резултата
+            let declInfoHtml = `<div class="bg-gray-900 p-3 rounded border border-gray-700 my-3 text-xs md:text-sm space-y-1">`;
+            declInfoHtml += `<div class="font-bold text-yellow-400 border-b border-gray-700 pb-1 mb-2">АНОНСИ И ВИКАНИЯ В ВРЪТКАТА:</div>`;
+
+            // Подготовка за изписване на анонсите за НИЕ
+            let usDeclList = declResult.usDecls.map(d => `${d.name} (${d.points}т.)`).join(', ');
+            if (belotePointsRound.us > 0) usDeclList += (usDeclList ? ', ' : '') + `Белот (${belotePointsRound.us}т.)`;
+            if (!usDeclList) usDeclList = 'Няма';
+
+            // Подготовка за изписване на анонсите за ВИЕ
+            let themDeclList = declResult.themDecls.map(d => `${d.name} (${d.points}т.)`).join(', ');
+            if (belotePointsRound.them > 0) themDeclList += (themDeclList ? ', ' : '') + `Белот (${belotePointsRound.them}т.)`;
+            if (!themDeclList) themDeclList = 'Няма';
+
+            declInfoHtml += `<div><span class="text-green-400 font-bold">НИЕ:</span> ${usDeclList}</div>`;
+            declInfoHtml += `<div><span class="text-red-400 font-bold">ВИЕ:</span> ${themDeclList}</div>`;
+
+            if (declResult.usDecls.length > 0 && declResult.themDecls.length > 0) {
+                if (declResult.winner === 0) declInfoHtml += `<div class="text-green-300 italic text-xs mt-1">* Анонсите на НИЕ бяха по-високи и се броят!</div>`;
+                else if (declResult.winner === 1) declInfoHtml += `<div class="text-red-300 italic text-xs mt-1">* Анонсите на ВИЕ бяха по-високи и се броят!</div>`;
+                else declInfoHtml += `<div class="text-gray-400 italic text-xs mt-1">* Анонсите бяха равни и се анулираха!</div>`;
+            }
+            declInfoHtml += `</div>`;
+
+            let resultMsg = `
+                <div>
+                    <div class="text-base text-gray-300 mb-2">Играно на: <b class="text-yellow-400">${currentContract}</b> ${gameMultiplier > 1 ? `(Мултипликатор x${gameMultiplier})` : ''}</div>
+                    
+                    ${declInfoHtml}
+
+                    <div class="grid grid-cols-2 gap-2 text-center bg-gray-700/50 p-3 rounded-lg border border-gray-600">
+                        <div class="border-r border-gray-600 pr-2">
+                            <div class="font-bold text-green-400 text-base border-b border-gray-600 pb-1">ОТБОР НИЕ</div>
+                            <div class="mt-2 text-xs text-gray-300">Карти: <b>${usCardPoints}</b></div>
+                            <div class="text-xs text-gray-300">Анонси: <b>${declPoints.us}</b></div>
+                            <div class="text-xs text-gray-300 border-t border-gray-600 pt-1 mt-1">Сурово: <b>${usRaw}</b></div>
+                            <div class="text-xl font-extrabold text-green-400 mt-2">+${usPoints} т.</div>
+                        </div>
+                        <div class="pl-2">
+                            <div class="font-bold text-red-400 text-base border-b border-gray-600 pb-1">ОТБОР ВИЕ</div>
+                            <div class="mt-2 text-xs text-gray-300">Карти: <b>${themCardPoints}</b></div>
+                            <div class="text-xs text-gray-300">Анонси: <b>${declPoints.them}</b></div>
+                            <div class="text-xs text-gray-300 border-t border-gray-600 pt-1 mt-1">Сурово: <b>${themRaw}</b></div>
+                            <div class="text-xl font-extrabold text-red-400 mt-2">+${themPoints} т.</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-2 border-t border-gray-700 text-center text-lg font-bold">
+                        Общ резултат: <span class="text-green-400">${globalScore.us}</span> : <span class="text-red-400">${globalScore.them}</span>
+                    </div>
+                </div>
+            `;
 
             if (globalScore.us >= 151 || globalScore.them >= 151) {
                 const isWinnerUs = globalScore.us > globalScore.them;
-                resultMsg += `<br><br><b style="color:#48bb78; font-size:18px;">${isWinnerUs ? 'ПОБЕДА ЗА ВАШИЯ ОТБОР!' : 'ПОРAЖЕНИЕ! ВРАГЪТ СПЕЧЕЛИ!'}</b>`;
+                resultMsg += `<div class="mt-4 text-center"><b class="text-xl ${isWinnerUs ? 'text-green-400' : 'text-red-500'}">${isWinnerUs ? '🏆 ПОБЕДА ЗА ВАШИЯ ОТБОР!' : '❌ ПОРAЖЕНИЕ! ВРАГЪТ СПЕЧЕЛИ!'}</b></div>`;
                 showModal("Край на Играта", resultMsg, () => {
                     globalScore = { us: 0, them: 0 };
                     document.getElementById('score-us').textContent = '0';
