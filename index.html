@@ -1599,14 +1599,24 @@
             const playedCard = trainingHands[playerIndex][cardIndex];
             let isBeloteSituation = false;
 
+            // Логика за Белот:
+            // Белот съществува САМО ако играта НЕ Е "Без коз"
             if (currentContract !== 'Без коз') {
                 const isAllTrumps = currentContract === 'На коньете';
+                // Ако играта е конкретна боя (♣, ♦, ♥, ♠), вземаме първия символ (боята на коза)
                 const trumpSuit = (!isAllTrumps) ? currentContract.charAt(0) : null;
                 
-                if ((playedCard.val === 'K' || playedCard.val === 'Q') && (isAllTrumps || playedCard.suit === trumpSuit)) {
-                    const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
-                    const hasOther = trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
-                    if (hasOther) isBeloteSituation = true;
+                // Картите трябва да са Поп (K) или Дама (Q)
+                if (playedCard.val === 'K' || playedCard.val === 'Q') {
+                    // Важно: Картите трябва да са от КОЗОВАТА боя (при игра на боя) или от произволна боя (при "На коньете")
+                    const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
+                    
+                    if (isTrumpCard) {
+                        const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
+                        // Проверяваме дали играчът държи и другата съответна карта от СЪЩАТА боя
+                        const hasOther = trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
+                        if (hasOther) isBeloteSituation = true;
+                    }
                 }
             }
 
