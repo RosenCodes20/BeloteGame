@@ -2399,18 +2399,24 @@
                 }
             } else {
                 if (isCallerUs) {
-                    if (usRaw > themRaw) {
+                    if (usRaw > themRaw) { 
                         usPoints = baseUsPoints;
                         themPoints = baseThemPoints;
-                    } else {
+                    } else if (usRaw === themRaw) { 
+                        usPoints = 0;
+                        themPoints = baseThemPoints; 
+                    } else { 
                         usPoints = 0;
                         themPoints = baseTotalPoints;
                     }
                 } else {
-                    if (themRaw > usRaw) {
+                    if (themRaw > usRaw) { 
                         usPoints = baseUsPoints;
                         themPoints = baseThemPoints;
-                    } else {
+                    } else if (themRaw === usRaw) {
+                        usPoints = baseUsPoints;
+                        themPoints = 0;
+                    } else { 
                         usPoints = baseTotalPoints;
                         themPoints = 0;
                     }
@@ -2423,41 +2429,21 @@
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
-            let summaryHtml = `
-                <div class="space-y-3 text-left">
-                    <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${currentContract} ${gameMultiplier > 1 ? '(x'+gameMultiplier+')' : ''}</p>
-                    <div class="flex justify-between text-slate-300">
-                        <span>Точки от ръце:</span>
-                        <span class="font-mono">Ние <b>${usCardPoints}</b> - Вие <b>${themCardPoints}</b></span>
-                    </div>
-                    <div class="flex justify-between text-slate-300">
-                        <span>Анонси/Белот:</span>
-                        <span class="font-mono">Ние <b>${declPoints.us}</b> - Вие <b>${declPoints.them}</b></span>
-                    </div>
-                    <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
-                        <p class="font-bold text-green-400 text-center">Точки за рунда: Ние +${usPoints} | Вие +${themPoints}</p>
-                    </div>
-                    <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
-                </div>
-            `;
-
-            if (globalScore.us >= 151 || globalScore.them >= 151) {
-                let winnerText = globalScore.us >= 151 ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
-                showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
-                    dealerIndex = (dealerIndex + 1) % 4;
-                    startTrainingGame();
-                });
+            let endMsg = `Точки от това раздаване:<br>НИЕ: <strong>${usPoints}</strong> | ВИЕ: <strong>${themPoints}</strong>`;
+            
+            if (globalScore.us >= 151 && globalScore.us > globalScore.them) {
+                endMsg += `<br><br><span style="color: #4ade80; font-size: 1.2em;">ПОБЕДА ЗА ВАС!</span>`;
+                showModal("Край на играта", endMsg, leaveRoomAndReset);
+            } else if (globalScore.them >= 151 && globalScore.them > globalScore.us) {
+                endMsg += `<br><br><span style="color: #ef4444; font-size: 1.2em;">ЗАГУБА!</span>`;
+                showModal("Край на играта", endMsg, leaveRoomAndReset);
             } else {
-                showModal("Край на рунда", summaryHtml, () => {
+                showModal("Резултат от раздаването", endMsg, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
                 });
             }
         }
-
-        window.addEventListener('load', () => {
-            initAuth();
-        });
     </script>
 </body>
 </html>
