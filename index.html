@@ -310,6 +310,9 @@
             100% { transform: scale(1); opacity: 1; } 
         }
 
+        /* ---------------------------------------------------- */
+        /*   ОПТИМИЗИРАН МОБИЛЕН CSS РЕЖИМ                      */
+        /* ---------------------------------------------------- */
         @media (max-width: 640px) {
             body {
                 padding: 0;
@@ -355,6 +358,7 @@
                 z-index: 40;
             }
 
+            /* МАСАТА: В центъра на екрана */
             .poker-table {
                 width: 90vw; 
                 height: 44vh;
@@ -376,6 +380,7 @@
             .seat-left { top: 50%; left: -6px; transform: translate(0, -50%); z-index: 25; }
             .seat-right { top: 50%; right: -6px; transform: translate(0, -50%); z-index: 25; }
             
+            /* Южното място: Поставено веднага под масата */
             .seat-bottom { 
                 bottom: -36px !important; 
                 left: 50%; 
@@ -383,6 +388,7 @@
                 z-index: 35; 
             }
 
+            /* РЪКАТА НА ИГРАЧА: ИЗЦЯЛО ИЗВЪН МАСАТА */
             .hand-container {
                 position: fixed !important;
                 bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
@@ -413,6 +419,7 @@
                 z-index: 120; 
             }
 
+            /* ВЗЯТКАТА В СРЕДАТА (РАЗДАЛЕЧЕНИ КАРТИ) */
             #trick-area { 
                 width: 210px !important; 
                 height: 210px !important; 
@@ -542,9 +549,9 @@
             </div>
         </div>
 
-        <div class="flex gap-3 justify-center">
-            <button id="btn-start-multiplayer" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
-                Влез на масата
+        <div class="flex flex-col gap-3 justify-center">
+            <button id="btn-start-multiplayer" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                🚀 Старт на играта (Свободните се попълват с Ботове)
             </button>
             <button id="btn-cancel-seat-select" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all">
                 Отказ
@@ -693,7 +700,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
         const fbConfig = {
@@ -719,7 +726,6 @@
 
         // Training Game State
         let trainingHands = [[], [], [], []];
-        let multiplayerHands = [[], [], [], []];
         let currentTrick = [];
         let currentTurn = 0;
         let aiTimeout = null;
@@ -984,7 +990,6 @@
 
             gamePhase = 'waiting';
             trainingHands = [[], [], [], []];
-            multiplayerHands = [[], [], [], []];
             currentTrick = [];
             currentTurn = 0;
             currentContract = null;
@@ -1193,31 +1198,39 @@
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1 || !currentRoomCode) return;
 
-            const roomRef = getRoomPath(currentRoomCode);
+            const startBtn = document.getElementById('btn-start-multiplayer');
+            startBtn.disabled = true;
+            startBtn.textContent = "Зареждане...";
+
             try {
+                const roomRef = getRoomPath(currentRoomCode);
                 const docSnap = await getDoc(roomRef);
                 if (!docSnap.exists()) return;
 
                 let seats = [...(docSnap.data().seats || [null, null, null, null])];
                 let botNum = 1;
+                
+                // Автоматично попълване на свободните места с AI Ботове
                 for (let i = 0; i < 4; i++) {
                     if (!seats[i]) {
                         seats[i] = { uid: `bot_${i}`, name: `Бот ${botNum++}`, isBot: true };
                     }
                 }
 
-                // Тесте
+                // Подготовка и разбъркване на тестето
                 initDeck();
                 let hands = [[], [], [], []];
                 let initialDealer = Math.floor(Math.random() * 4);
                 let dealOrder = [(initialDealer + 1) % 4, (initialDealer + 2) % 4, (initialDealer + 3) % 4, initialDealer];
 
+                // Раздават се по 5 начални карти
                 for (let r = 0; r < 5; r++) {
                     for (let p of dealOrder) {
                         hands[p].push(deck.pop());
                     }
                 }
 
+                // Обновяване на стаята в Firestore за стартиране на играта
                 await updateDoc(roomRef, {
                     status: 'playing',
                     seats: seats,
@@ -1246,6 +1259,8 @@
                 listenToRoom(currentRoomCode);
             } catch (err) {
                 showError("Грешка при стартиране: " + err.message);
+                startBtn.disabled = false;
+                startBtn.textContent = "🚀 Старт на играта (Свободните са Ботове)";
             }
         });
 
@@ -1327,55 +1342,7 @@
                     currentRoomSeats = data.seats;
                     updateMultiplayerSeatNames(data.seats);
                 }
-
-                if (data && data.status === 'playing') {
-                    seatSelectView.style.display = 'none';
-                    gameView.style.display = 'flex';
-                    
-                    gamePhase = data.gamePhase;
-                    currentTurn = data.currentTurn;
-                    dealerIndex = data.dealerIndex;
-                    currentContract = data.currentContract;
-
-                    multiplayerHands = data.hands || [[], [], [], []];
-                    
-                    if (data.hands && mySeatIndex !== -1) {
-                        renderMultiplayerPlayerHand(data.hands[mySeatIndex] || []);
-                    }
-
-                    updateTurnVisuals();
-                    updateDealerVisuals();
-
-                    if (data.gamePhase === 'bidding' && data.currentTurn === mySeatIndex) {
-                        biddingPanel.style.display = 'flex';
-                    } else {
-                        biddingPanel.style.display = 'none';
-                    }
-                }
             }, (error) => console.error("Listen room error:", error));
-        }
-
-        function renderMultiplayerPlayerHand(hand) {
-            const handContainer = document.getElementById('my-hand');
-            handContainer.innerHTML = '';
-            
-            const isMobile = window.innerWidth <= 768;
-
-            hand.forEach((card, index) => {
-                const cardEl = document.createElement('div');
-                cardEl.className = `card ${card.color} playable`;
-                
-                const offset = index - (hand.length - 1) / 2;
-                const rotate = offset * (isMobile ? 3 : 5.5);
-                const translateY = Math.abs(offset) * (isMobile ? 1.5 : 2.5);
-                
-                cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY}px)`;
-                cardEl.style.zIndex = index;
-                cardEl.innerHTML = `<div class="text-[0.8em] font-bold absolute top-1 left-1.5 leading-none">${card.val}</div>
-                                    <div class="text-3xl md:text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">${card.suit}</div>
-                                    <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${card.val}</div>`;
-                handContainer.appendChild(cardEl);
-            });
         }
 
         document.getElementById('btn-training').addEventListener('click', () => {
