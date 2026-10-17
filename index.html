@@ -7,87 +7,115 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background-color: #1a202c;
+            background: radial-gradient(ellipse at top, #1e293b, #0f172a, #000000);
             color: white;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             overflow: hidden;
             touch-action: manipulation;
             height: 100dvh;
             width: 100vw;
         }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
         
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: #4ade80;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+            outline: none;
+        }
+
         .poker-table {
-            background: radial-gradient(circle, #2d7a31 0%, #174219 100%);
-            border: 12px solid #5c3a21;
+            background: radial-gradient(circle, #227042 0%, #0c331a 100%);
+            border: 14px solid #3d2314;
             border-radius: 9999px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 
+                0 0 0 3px #1a0e08, 
+                inset 0 0 0 3px #d4af37, 
+                inset 0 0 40px rgba(0,0,0,0.8), 
+                0 25px 50px -12px rgba(0,0,0,0.7);
             position: relative;
-            width: min(85vw, 800px);
-            height: min(50vh, 550px);
+            width: min(85vw, 850px);
+            height: min(50vh, 600px);
             margin: auto;
         }
 
         .seat {
             position: absolute;
-            width: 90px;
+            min-width: 100px;
             text-align: center;
-            background: rgba(0,0,0,0.85);
-            padding: 6px;
-            border-radius: 8px;
-            border: 1px solid #4a5568;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            padding: 8px 12px;
+            border-radius: 99px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             transform: translate(-50%, -50%);
             transition: all 0.3s;
             z-index: 10;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        .seat-bottom { bottom: -20px; left: 50%; transform: translate(-50%, 0); z-index: 50; }
-        .seat-top { top: -20px; left: 50%; transform: translate(-50%, -100%); z-index: 50; }
-        .seat-left { top: 50%; left: 10px; transform: translate(0, -50%); z-index: 50; }
-        .seat-right { top: 50%; right: 10px; transform: translate(0, -50%); z-index: 50; }
+        .seat-bottom { bottom: -25px; left: 50%; transform: translate(-50%, 0); z-index: 50; }
+        .seat-top { top: -25px; left: 50%; transform: translate(-50%, -100%); z-index: 50; }
+        .seat-left { top: 50%; left: 15px; transform: translate(0, -50%); z-index: 50; }
+        .seat-right { top: 50%; right: 15px; transform: translate(0, -50%); z-index: 50; }
 
         .card {
-            width: min(15vw, 68px);
-            height: min(22.5vw, 102px);
-            background: #ffffff;
-            border-radius: 6px;
+            width: min(15vw, 75px);
+            height: min(22.5vw, 112px);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: min(5vw, 24px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-            border: 2px solid #e2e8f0;
-            margin: 0 -8px;
-            transition: transform 0.2s, top 0.2s;
+            font-size: min(5vw, 26px);
+            box-shadow: -2px 5px 10px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,1);
+            border: 1px solid #cbd5e1;
+            margin: 0 -12px;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
             cursor: pointer;
             user-select: none;
             line-height: 1.1;
             flex-shrink: 0;
+            position: relative;
         }
         
         .card.playable:hover, .card.playable:active {
-            transform: translateY(-18px) !important;
-            border-color: #48bb78;
-            border-width: 3px;
+            transform: translateY(-24px) scale(1.05) !important;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.5), 0 0 15px rgba(74,222,128,0.6);
+            border: 2px solid #4ade80;
+            z-index: 100 !important;
         }
 
         .invalid-card {
-            opacity: 0.4;
+            opacity: 0.5;
             pointer-events: none;
-            filter: grayscale(80%);
+            filter: grayscale(60%) brightness(0.8);
         }
 
-        .red-suit { color: #e53e3e; }
-        .black-suit { color: #1a202c; }
+        .red-suit { color: #dc2626; }
+        .black-suit { color: #0f172a; }
 
         .hand-container {
             position: absolute;
-            bottom: 10px;
+            bottom: 5px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            padding: 5px;
+            padding: 10px;
             z-index: 30;
             width: 100%;
             max-width: 100vw;
@@ -107,133 +135,142 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 220px;
-            height: 220px;
+            width: 240px;
+            height: 240px;
         }
         
         .trick-card {
             position: absolute;
             margin: 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             pointer-events: none;
         }
         
         .trick-p0 { bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 4; }
-        .trick-p1 { right: 10px; top: 50%; transform: translateY(-50%) rotate(-90deg); z-index: 1; }
+        .trick-p1 { right: 10px; top: 50%; transform: translateY(-50%) rotate(-85deg); z-index: 1; }
         .trick-p2 { top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; }
-        .trick-p3 { left: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 3; }
+        .trick-p3 { left: 10px; top: 50%; transform: translateY(-50%) rotate(85deg); z-index: 3; }
 
         .speech-bubble {
             position: absolute;
-            background: white;
-            color: black;
-            border-radius: 8px;
-            padding: 4px 8px;
-            font-size: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #0f172a;
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: 13px;
             font-weight: bold;
             z-index: 100;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
             white-space: nowrap;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            border-width: 6px;
-            border-style: solid;
-        }
-        .seat-bottom .speech-bubble { top: -45px; left: 50%; transform: translateX(-50%); z-index: 100; }
-        .seat-bottom .speech-bubble::after { bottom: -11px; left: 50%; transform: translateX(-50%); border-color: white transparent transparent transparent; }
+        .speech-bubble::after { content: ''; position: absolute; border-width: 6px; border-style: solid; }
         
-        .seat-top .speech-bubble { bottom: -35px; left: 50%; transform: translateX(-50%); }
-        .seat-top .speech-bubble::after { top: -11px; left: 50%; transform: translateX(-50%); border-color: transparent transparent white transparent; }
+        .seat-bottom .speech-bubble { top: -50px; left: 50%; transform: translateX(-50%); z-index: 100; }
+        .seat-bottom .speech-bubble::after { bottom: -11px; left: 50%; transform: translateX(-50%); border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent; }
         
-        .seat-left .speech-bubble { top: 50%; left: 100%; transform: translateY(-50%); margin-left: 8px; }
-        .seat-left .speech-bubble::after { left: -11px; top: 50%; transform: translateY(-50%); border-color: transparent white transparent transparent; }
+        .seat-top .speech-bubble { bottom: -45px; left: 50%; transform: translateX(-50%); }
+        .seat-top .speech-bubble::after { top: -11px; left: 50%; transform: translateX(-50%); border-color: transparent transparent rgba(255, 255, 255, 0.95) transparent; }
         
-        .seat-right .speech-bubble { top: 50%; right: 100%; transform: translateY(-50%); margin-right: 8px; }
-        .seat-right .speech-bubble::after { right: -11px; top: 50%; transform: translateY(-50%); border-color: transparent transparent transparent white; }
+        .seat-left .speech-bubble { top: 50%; left: 100%; transform: translateY(-50%); margin-left: 12px; }
+        .seat-left .speech-bubble::after { left: -11px; top: 50%; transform: translateY(-50%); border-color: transparent rgba(255, 255, 255, 0.95) transparent transparent; }
+        
+        .seat-right .speech-bubble { top: 50%; right: 100%; transform: translateY(-50%); margin-right: 12px; }
+        .seat-right .speech-bubble::after { right: -11px; top: 50%; transform: translateY(-50%); border-color: transparent transparent transparent rgba(255, 255, 255, 0.95); }
 
         #bidding-panel {
             position: absolute;
-            bottom: 120px;
+            bottom: 130px;
             top: auto;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(30, 41, 59, 0.95);
-            padding: 12px;
-            border-radius: 12px;
-            border: 2px solid #48bb78;
+            padding: 16px;
+            border-radius: 16px;
             z-index: 40;
             display: none;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
             justify-content: center;
             width: 90vw;
-            max-width: 340px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            max-width: 360px;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
         }
 
         .bid-btn {
-            background: #2d3748;
+            background: rgba(30, 41, 59, 0.8);
             color: white;
-            border: 1px solid #4a5568;
-            padding: 6px 10px;
-            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 14px;
             transition: all 0.2s;
+            backdrop-filter: blur(4px);
         }
-        .bid-btn:hover:not(:disabled) { background: #4a5568; border-color: #a0aec0; }
-        .bid-btn.suit-red { color: #fc8181; }
-        .bid-btn.pass { background: #c53030; border-color: #9b2c2c; }
-        .bid-btn.pass:hover { background: #9b2c2c; }
-        .bid-btn.kontra { background: #dd6b20; border-color: #c05621; }
-        .bid-btn.kontra:hover { background: #c05621; }
-        .bid-btn.rekontra { background: #805ad5; border-color: #6b46c1; }
-        .bid-btn.rekontra:hover { background: #6b46c1; }
-
-        .seat-card {
-            background: #2d3748;
-            border: 2px dashed #4a5568;
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .bid-btn:hover:not(:disabled) { 
+            background: rgba(51, 65, 85, 1); 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .seat-card.occupied {
-            border-style: solid;
-            border-color: #48bb78;
-            background: #1a202c;
-            cursor: default;
-        }
-        .seat-card.my-seat {
-            border-color: #3182ce;
-            background: #2b6cb0;
-        }
+        .bid-btn.suit-red { color: #f87171; }
+        .bid-btn.suit-black { color: #94a3b8; }
+        
+        .bid-btn.pass { background: rgba(185, 28, 28, 0.8); border-color: #ef4444; }
+        .bid-btn.pass:hover { background: rgba(220, 38, 38, 1); }
+        
+        .bid-btn.kontra { background: rgba(194, 65, 12, 0.8); border-color: #f97316; }
+        .bid-btn.kontra:hover { background: rgba(234, 88, 12, 1); }
+        
+        .bid-btn.rekontra { background: rgba(109, 40, 217, 0.8); border-color: #8b5cf6; }
+        .bid-btn.rekontra:hover { background: rgba(124, 58, 237, 1); }
 
         .dealer-badge {
             position: absolute;
-            top: -10px;
-            right: -10px;
-            background: #ed8936;
-            color: white;
+            top: -8px;
+            right: -8px;
+            background: radial-gradient(circle, #ffffff 40%, #f1f5f9 100%);
+            color: #0f172a;
             border-radius: 50%;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             font-size: 12px;
             font-weight: 900;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            border: 2px dashed #dc2626;
             z-index: 20;
             display: none;
+        }
+
+        .seat-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 2px dashed rgba(148, 163, 184, 0.4);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .seat-card:hover:not(.occupied) {
+            background: rgba(51, 65, 85, 0.8);
+            border-color: #4ade80;
+        }
+        .seat-card.occupied {
+            border-style: solid;
+            border-color: #ef4444;
+            background: rgba(15, 23, 42, 0.6);
+            cursor: default;
+        }
+        .seat-card.my-seat {
+            border-color: #3b82f6;
+            background: rgba(29, 78, 216, 0.3);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
 
         .dealing-anim {
@@ -242,232 +279,201 @@
             left: 50%;
             width: 50px;
             height: 75px;
-            background: #2b6cb0;
+            background: repeating-linear-gradient(45deg, #1e3a8a, #1e3a8a 10px, #1e40af 10px, #1e40af 20px);
             border: 2px solid #fff;
             border-radius: 6px;
             transform: translate(-50%, -50%);
-            transition: all 0.4s ease-out;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             z-index: 50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
 
-        @keyframes throwCard0 { 
-            from { transform: translate(-50%, 150px) scale(0.3); opacity: 0; } 
-            to { transform: translateX(-50%) scale(1); opacity: 1; } 
-        }
-        @keyframes throwCard1 { 
-            from { transform: translate(150px, -50%) scale(0.3); opacity: 0; } 
-            to { transform: translateY(-50%) rotate(-90deg) scale(1); opacity: 1; } 
-        }
-        @keyframes throwCard2 { 
-            from { transform: translate(-50%, -150px) scale(0.3); opacity: 0; } 
-            to { transform: translateX(-50%) scale(1); opacity: 1; } 
-        }
-        @keyframes throwCard3 { 
-            from { transform: translate(-150px, -50%) scale(0.3); opacity: 0; } 
-            to { transform: translateY(-50%) rotate(90deg) scale(1); opacity: 1; } 
-        }
+        @keyframes throwCard0 { from { transform: translate(-50%, 180px) scale(0.3); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+        @keyframes throwCard1 { from { transform: translate(180px, -50%) scale(0.3); opacity: 0; } to { transform: translateY(-50%) rotate(-85deg) scale(1); opacity: 1; } }
+        @keyframes throwCard2 { from { transform: translate(-50%, -180px) scale(0.3); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+        @keyframes throwCard3 { from { transform: translate(-180px, -50%) scale(0.3); opacity: 0; } to { transform: translateY(-50%) rotate(85deg) scale(1); opacity: 1; } }
 
-        .anim-throw-0 { animation: throwCard0 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .anim-throw-1 { animation: throwCard1 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .anim-throw-2 { animation: throwCard2 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .anim-throw-3 { animation: throwCard3 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anim-throw-0 { animation: throwCard0 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anim-throw-1 { animation: throwCard1 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anim-throw-2 { animation: throwCard2 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .anim-throw-3 { animation: throwCard3 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 
         #custom-modal { display: none; }
+        
+        .modal-content {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn { 
+            0% { transform: scale(0.8); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
 
         @media (max-width: 640px) {
             .poker-table {
-                width: 92vw;
-                height: 50vh;
-                border-width: 6px;
-                margin-top: auto;
-                margin-bottom: auto;
+                width: 94vw;
+                height: 52vh;
+                border-width: 8px;
             }
             .seat {
-                width: 65px;
-                padding: 3px;
-                font-size: 10px;
+                min-width: 70px;
+                padding: 4px 8px;
+                font-size: 11px;
             }
-            .seat-bottom { bottom: -12px; }
-            .seat-top { top: -12px; }
-            .seat-left { left: 4px; }
-            .seat-right { right: 4px; }
+            .seat-bottom { bottom: -15px; }
+            .seat-top { top: -15px; }
+            .seat-left { left: 8px; }
+            .seat-right { right: 8px; }
 
             .card {
-                width: 50px;
-                height: 75px;
-                font-size: 17px;
-                margin: 0 -8px;
-                border-radius: 5px;
+                width: 55px;
+                height: 82px;
+                font-size: 18px;
+                margin: 0 -14px;
+                border-radius: 6px;
+            }
+            .card.playable:hover, .card.playable:active {
+                transform: translateY(-15px) scale(1.05) !important;
             }
 
-            .hand-container {
-                bottom: 8px;
-            }
-
-            #trick-area {
-                width: 160px;
-                height: 160px;
-            }
-
-            .speech-bubble {
-                font-size: 10px;
-                padding: 2px 4px;
-            }
-
-            #bidding-panel {
-                bottom: 95px;
-            }
-
-            .bid-btn {
-                padding: 6px 8px;
-                font-size: 12px;
-            }
-            
-            .dealer-badge {
-                width: 18px;
-                height: 18px;
-                font-size: 10px;
-                top: -6px;
-                right: -6px;
-            }
+            .hand-container { bottom: 5px; }
+            #trick-area { width: 170px; height: 170px; }
+            .speech-bubble { font-size: 11px; padding: 4px 8px; }
+            #bidding-panel { bottom: 105px; gap: 4px; padding: 10px; border-radius: 12px; }
+            .bid-btn { padding: 6px 8px; font-size: 12px; }
+            .dealer-badge { width: 20px; height: 20px; font-size: 10px; top: -6px; right: -6px; }
             
             #scoreboard {
-                top: auto !important;
-                bottom: 5px !important;
-                left: 5px !important;
-                transform: scale(0.75) !important;
-                transform-origin: bottom left !important;
+                top: auto !important; bottom: 8px !important; left: 8px !important;
+                transform: scale(0.85) !important; transform-origin: bottom left !important;
+                padding: 8px !important;
             }
             #current-game-indicator {
-                top: auto !important;
-                bottom: 5px !important;
-                right: 5px !important;
-                left: auto !important;
-                transform: scale(0.75) !important;
-                transform-origin: bottom right !important;
+                top: auto !important; bottom: 8px !important; right: 8px !important; left: auto !important;
+                transform: scale(0.85) !important; transform-origin: bottom right !important;
+                padding: 6px 12px !important;
             }
-            
-            #center-info .text-2xl { font-size: 16px !important; }
-            #contract-display { font-size: 14px !important; }
+            #game-log-bar { top: 60px !important; font-size: 11px !important; }
         }
     </style>
 </head>
 <body class="h-screen w-screen flex items-center justify-center relative bg-gray-900 text-white">
 
-    <!-- Lobby View -->
-    <div id="lobby-view" class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
-        <h1 class="text-4xl font-bold text-green-500 mb-6">Белот</h1>
+    <div id="lobby-view" class="glass-panel p-8 rounded-2xl w-full max-w-md text-center mx-4">
+        <div class="mb-8">
+            <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300 drop-shadow-sm mb-2">Белот</h1>
+            <p class="text-slate-300 text-sm">Онлайн мултиплейър & тренировка</p>
+        </div>
         
         <div class="mb-6">
-            <input type="text" id="player-name" placeholder="Твоето име" class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-green-500 text-white text-lg">
+            <input type="text" id="player-name" placeholder="Твоето име" class="glass-input w-full p-4 rounded-xl text-white text-lg placeholder-gray-400">
         </div>
 
-        <button id="btn-training" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded mb-6 transition shadow-lg">
+        <button id="btn-training" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl mb-8 transition-all shadow-lg hover:shadow-indigo-500/30">
             Тренировка (Срещу Ботове)
         </button>
 
-        <div class="flex items-center justify-between mb-6">
-            <hr class="w-1/3 border-gray-600">
-            <span class="text-gray-400 font-bold">Мултиплейър</span>
-            <hr class="w-1/3 border-gray-600">
+        <div class="flex items-center justify-between mb-8 opacity-70">
+            <hr class="w-1/3 border-slate-500">
+            <span class="text-slate-300 font-medium text-sm px-2">МУЛТИПЛЕЙЪР</span>
+            <hr class="w-1/3 border-slate-500">
         </div>
 
-        <button id="btn-create" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded mb-4 transition">
+        <button id="btn-create" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-3.5 px-4 rounded-xl mb-5 transition-all shadow-lg hover:shadow-green-500/30">
             Създай онлайн стая
         </button>
 
-        <div class="flex space-x-2 mb-2">
-            <input type="text" id="room-code-input" placeholder="Код на стая" class="w-2/3 p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-green-500 text-white text-lg uppercase">
-            <button id="btn-join" class="w-1/3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition">
+        <div class="flex space-x-3 mb-2">
+            <input type="text" id="room-code-input" placeholder="Код на стая" class="glass-input w-2/3 p-3 rounded-xl text-white text-lg uppercase text-center placeholder-gray-400 font-mono tracking-wider">
+            <button id="btn-join" class="w-1/3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/30">
                 Влез
             </button>
         </div>
-        <p id="lobby-error" class="text-red-400 mt-2 text-sm hidden"></p>
+        <p id="lobby-error" class="text-red-400 mt-3 text-sm font-medium hidden bg-red-900/50 p-2 rounded-lg"></p>
     </div>
 
-    <!-- Multiplayer Seat Selection View -->
-    <div id="seat-select-view" class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg text-center hidden">
-        <h2 class="text-2xl font-bold text-green-400 mb-2">Избор на отбор и място</h2>
-        <p class="text-gray-400 text-sm mb-4">Код на стаята: <span id="seat-room-code" class="text-yellow-400 font-mono font-bold text-base"></span></p>
+    <div id="seat-select-view" class="glass-panel p-6 rounded-2xl w-full max-w-lg text-center hidden mx-4">
+        <h2 class="text-2xl font-bold text-white mb-1">Избор на място</h2>
+        <p class="text-slate-300 text-sm mb-6">Код: <span id="seat-room-code" class="text-green-400 font-mono font-bold text-lg bg-black/30 px-3 py-1 rounded-lg ml-1 border border-green-500/30"></span></p>
 
-        <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-2 gap-4 mb-8">
             <!-- Team 1 -->
-            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
-                <h3 class="text-lg font-bold text-green-400 mb-3 border-b border-gray-700 pb-1">ОТБОР 1 (НИЕ)</h3>
+            <div class="bg-black/20 p-4 rounded-xl border border-white/5">
+                <h3 class="text-sm font-bold text-green-400 mb-3 tracking-wider">ОТБОР 1 (НИЕ)</h3>
                 <div class="flex flex-col gap-3">
                     <div id="seat-btn-0" class="seat-card">
-                        <div class="text-xs text-gray-400">Място 1 (Юг)</div>
-                        <div class="font-bold text-sm seat-name">Свободно</div>
+                        <div class="text-xs text-slate-400 mb-1">Място 1 (Юг)</div>
+                        <div class="font-bold text-sm seat-name text-slate-200">Свободно</div>
                     </div>
                     <div id="seat-btn-2" class="seat-card">
-                        <div class="text-xs text-gray-400">Място 3 (Север)</div>
-                        <div class="font-bold text-sm seat-name">Свободно</div>
+                        <div class="text-xs text-slate-400 mb-1">Място 3 (Север)</div>
+                        <div class="font-bold text-sm seat-name text-slate-200">Свободно</div>
                     </div>
                 </div>
             </div>
 
             <!-- Team 2 -->
-            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
-                <h3 class="text-lg font-bold text-red-400 mb-3 border-b border-gray-700 pb-1">ОТБОР 2 (ВИЕ)</h3>
+            <div class="bg-black/20 p-4 rounded-xl border border-white/5">
+                <h3 class="text-sm font-bold text-red-400 mb-3 tracking-wider">ОТБОР 2 (ВИЕ)</h3>
                 <div class="flex flex-col gap-3">
                     <div id="seat-btn-1" class="seat-card">
-                        <div class="text-xs text-gray-400">Място 2 (Изток)</div>
-                        <div class="font-bold text-sm seat-name">Свободно</div>
+                        <div class="text-xs text-slate-400 mb-1">Място 2 (Изток)</div>
+                        <div class="font-bold text-sm seat-name text-slate-200">Свободно</div>
                     </div>
                     <div id="seat-btn-3" class="seat-card">
-                        <div class="text-xs text-gray-400">Място 4 (Запад)</div>
-                        <div class="font-bold text-sm seat-name">Свободно</div>
+                        <div class="text-xs text-slate-400 mb-1">Място 4 (Запад)</div>
+                        <div class="font-bold text-sm seat-name text-slate-200">Свободно</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="flex gap-3 justify-center">
-            <button id="btn-start-multiplayer" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <button id="btn-start-multiplayer" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
                 Влез на масата
             </button>
-            <button id="btn-cancel-seat-select" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition">
+            <button id="btn-cancel-seat-select" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all">
                 Отказ
             </button>
         </div>
     </div>
 
-    <!-- Game View -->
     <div id="game-view" class="w-full h-full flex flex-col p-4 relative">
         
-        <!-- Current Game Indicator -->
-        <div id="current-game-indicator" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 border-2 border-yellow-400 text-yellow-400 font-bold px-6 py-2 rounded-xl text-xl hidden z-50 shadow-[0_0_15px_rgba(236,201,75,0.5)]">
-            Играе се: <span id="current-game-value" class="text-white"></span>
-        </div>
-
-        <!-- Scoreboard -->
-        <div id="scoreboard" class="absolute top-4 left-4 bg-gray-900 border-2 border-green-500 rounded-xl p-3 z-50 flex gap-4 shadow-[0_0_15px_rgba(72,187,120,0.3)] hidden">
-            <div class="text-center w-16">
-                <div class="text-xs text-gray-400 font-bold">НИЕ</div>
-                <div id="score-us" class="text-2xl text-white font-bold">0</div>
+        <!-- Scoreboard (Glassmorphism) -->
+        <div id="scoreboard" class="absolute top-4 left-4 glass-panel border border-green-500/50 rounded-xl p-3 z-50 flex gap-5 hidden">
+            <div class="text-center min-w-[50px]">
+                <div class="text-[10px] text-green-400 font-black tracking-widest">НИЕ</div>
+                <div id="score-us" class="text-2xl text-white font-bold leading-none mt-1">0</div>
             </div>
-            <div class="border-r border-gray-600"></div>
-            <div class="text-center w-16">
-                <div class="text-xs text-gray-400 font-bold">ВИЕ</div>
-                <div id="score-them" class="text-2xl text-white font-bold">0</div>
+            <div class="w-px bg-white/20"></div>
+            <div class="text-center min-w-[50px]">
+                <div class="text-[10px] text-red-400 font-black tracking-widest">ВИЕ</div>
+                <div id="score-them" class="text-2xl text-white font-bold leading-none mt-1">0</div>
             </div>
         </div>
 
-        <!-- Log Bar for Last Bids & Declarations -->
-        <div id="game-log-bar" class="absolute top-16 left-1/2 transform -translate-x-1/2 bg-gray-800/90 border border-gray-600 text-yellow-300 font-medium text-xs md:text-sm px-4 py-1 rounded-full z-40 hidden max-w-[90vw] truncate shadow-lg text-center">
-            Анонси: <span id="log-text" class="text-white font-bold">Няма</span>
+        <!-- Current Game Indicator (Glassmorphism) -->
+        <div id="current-game-indicator" class="absolute top-4 right-4 md:left-1/2 md:transform md:-translate-x-1/2 md:right-auto glass-panel border border-yellow-500/50 text-slate-300 font-medium px-5 py-2.5 rounded-xl hidden z-50 flex items-center gap-2">
+            <span class="text-xs uppercase tracking-wider opacity-80">Игра:</span> 
+            <span id="current-game-value" class="text-yellow-400 font-bold text-lg drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"></span>
         </div>
 
-        <div class="flex justify-between items-center mb-4">
-            <div>
-                <h2 class="text-xl font-bold">Режим: <span id="display-room-code" class="text-green-400 tracking-wider"></span></h2>
-                <p id="game-subtitle" class="text-sm text-gray-400"></p>
+        <!-- Log Bar -->
+        <div id="game-log-bar" class="absolute top-20 left-1/2 transform -translate-x-1/2 glass-panel text-yellow-300 font-medium text-xs md:text-sm px-5 py-1.5 rounded-full z-40 hidden max-w-[85vw] truncate text-center border-white/10">
+            <span class="opacity-70 text-white mr-2">Анонс:</span><span id="log-text" class="text-white font-bold">Няма</span>
+        </div>
+
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start mb-2 z-40 relative pointer-events-none">
+            <div class="glass-panel px-4 py-2 rounded-xl pointer-events-auto mt-16 md:mt-0">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">Стая: <span id="display-room-code" class="text-emerald-400 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded"></span></h2>
+                <p id="game-subtitle" class="text-xs text-slate-400 mt-1"></p>
             </div>
-            <button id="btn-leave" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-bold transition">Напусни</button>
+            <button id="btn-leave" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 px-4 py-2 rounded-xl font-bold transition-all pointer-events-auto backdrop-blur-md mt-16 md:mt-0">Напусни</button>
         </div>
 
-        <div class="flex-grow flex items-center justify-center">
-            <div class="poker-table">
+        <div class="flex-grow flex items-center justify-center pointer-events-none">
+            <div class="poker-table pointer-events-auto">
                 <!-- Seats -->
                 <div id="seat-top" class="seat seat-top hidden">
                     <div class="dealer-badge" id="dealer-top">D</div>
@@ -487,32 +493,43 @@
                     <div class="font-bold truncate text-sm" id="name-right">Изчаква...</div>
                 </div>
 
-                <div id="seat-bottom" class="seat seat-bottom hidden">
+                <div id="seat-bottom" class="seat seat-bottom hidden border-green-500/50 bg-slate-800/90 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
                     <div class="dealer-badge" id="dealer-bottom">D</div>
                     <div class="speech-bubble" id="bubble-bottom"></div>
                     <div class="font-bold truncate text-sm text-green-400" id="name-bottom">Аз</div>
                 </div>
 
-                <!-- Center Table Info / Trick Area -->
-                <div id="center-info" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center text-green-200 opacity-50 z-0 flex flex-col items-center">
-                    <div class="text-2xl font-bold">БЕЛОТ</div>
-                    <div id="waiting-msg" class="text-sm"></div>
-                    <div id="contract-display" class="mt-2 text-lg font-bold text-yellow-300 hidden"></div>
+                <!-- Center Table Info -->
+                <div id="center-info" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0 flex flex-col items-center opacity-30 pointer-events-none mix-blend-overlay">
+                    <div class="text-4xl font-black tracking-widest text-black drop-shadow-md">БЕЛОТ</div>
                 </div>
+                
+                <!-- Status Messages Over Table -->
+                <div id="waiting-msg" class="absolute top-[35%] left-1/2 transform -translate-x-1/2 text-center text-sm md:text-base font-medium text-white bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm empty:hidden z-10"></div>
+                <div id="contract-display" class="absolute top-[65%] left-1/2 transform -translate-x-1/2 mt-2 text-lg font-bold text-yellow-400 drop-shadow-md hidden z-10"></div>
 
                 <div id="trick-area"></div>
 
                 <!-- Bidding Panel -->
-                <div id="bidding-panel">
-                    <button class="bid-btn" data-bid="♣">♣ Скапия</button>
-                    <button class="bid-btn suit-red" data-bid="♦">♦ Кало</button>
-                    <button class="bid-btn suit-red" data-bid="♥">♥ Купа</button>
-                    <button class="bid-btn" data-bid="♠">♠ Пипа</button>
-                    <button class="bid-btn w-full" data-bid="Под коньете">Под коньете</button>
-                    <button class="bid-btn w-full" data-bid="На коньете">На коньете</button>
-                    <button class="bid-btn kontra w-full" data-bid="Контра" id="btn-kontra">КОНТРА (x2)</button>
-                    <button class="bid-btn rekontra w-full" data-bid="Реконтра" id="btn-rekontra">РЕКОНТРА (x4)</button>
-                    <button class="bid-btn pass w-full" data-bid="Пазас">Пазас</button>
+                <div id="bidding-panel" class="glass-panel">
+                    <div class="w-full text-center text-xs text-slate-300 font-bold mb-1 uppercase tracking-wider opacity-80">Твой ред за анонс</div>
+                    <div class="flex w-full gap-2 justify-center">
+                        <button class="bid-btn flex-1 suit-black" data-bid="♣">♣ Скапия</button>
+                        <button class="bid-btn flex-1 suit-red" data-bid="♦">♦ Кало</button>
+                    </div>
+                    <div class="flex w-full gap-2 justify-center">
+                        <button class="bid-btn flex-1 suit-red" data-bid="♥">♥ Пука</button>
+                        <button class="bid-btn flex-1 suit-black" data-bid="♠">♠ Пипа</button>
+                    </div>
+                    <div class="flex w-full gap-2 justify-center mt-1">
+                        <button class="bid-btn flex-1 bg-slate-700/50" data-bid="Под коньете">Под коньете</button>
+                        <button class="bid-btn flex-1 bg-slate-700/50" data-bid="На коньете">На коньете</button>
+                    </div>
+                    <div class="flex w-full gap-2 justify-center mt-1">
+                        <button class="bid-btn kontra flex-1" data-bid="Контра" id="btn-kontra">КОНТРА</button>
+                        <button class="bid-btn rekontra flex-1" data-bid="Реконтра" id="btn-rekontra">РЕКОНТРА</button>
+                    </div>
+                    <button class="bid-btn pass w-full mt-1" data-bid="Пазас">ПАЗАС</button>
                 </div>
 
                 <!-- Hand Container -->
@@ -522,35 +539,37 @@
     </div>
 
     <!-- Modals -->
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
-        <div class="bg-gray-800 border-2 border-green-500 rounded-xl p-6 max-w-md w-full text-center shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 id="modal-title" class="text-2xl font-bold text-white mb-3">Съобщение</h2>
-            <div id="modal-msg" class="text-gray-300 mb-6 text-left space-y-2 text-sm md:text-base">Текст</div>
-            <button id="modal-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition">
-                Добре
+    <div id="custom-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+        <div class="glass-panel modal-content rounded-2xl p-6 md:p-8 max-w-md w-full text-center border border-white/10 shadow-2xl">
+            <h2 id="modal-title" class="text-2xl font-bold text-white mb-4 drop-shadow-sm">Съобщение</h2>
+            <div id="modal-msg" class="text-slate-200 mb-8 text-left space-y-3 text-sm md:text-base bg-black/20 p-4 rounded-xl">Текст</div>
+            <button id="modal-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/30">
+                Продължи
             </button>
         </div>
     </div>
 
-    <div id="declarations-modal" class="fixed inset-0 bg-black bg-opacity-75 z-[60] hidden items-center justify-center">
-        <div class="bg-gray-800 border-2 border-blue-500 rounded-xl p-6 max-w-sm w-full text-center shadow-[0_0_20px_rgba(66,153,225,0.6)]">
-            <h2 class="text-xl font-bold text-white mb-4">Намерени Анонси (Викане)</h2>
-            <p class="text-sm text-gray-300 mb-4">Изберете какво искате да обявите:</p>
-            <div id="declarations-modal-list" class="flex flex-col gap-2 mb-6 text-left"></div>
+    <div id="declarations-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] hidden items-center justify-center px-4">
+        <div class="glass-panel modal-content border-blue-500/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-400/50 text-blue-400 text-xl">ℹ️</div>
+            <h2 class="text-xl font-bold text-white mb-2">Намерени Анонси</h2>
+            <p class="text-sm text-slate-400 mb-5">Изберете какво искате да обявите:</p>
+            <div id="declarations-modal-list" class="flex flex-col gap-2 mb-6 text-left max-h-48 overflow-y-auto pr-2 custom-scrollbar"></div>
             <div class="flex flex-col gap-3 justify-center">
-                <button id="btn-declare-yes" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">Обяви маркираните</button>
-                <button id="btn-declare-no" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition">Пас (Не обявявай нищо)</button>
+                <button id="btn-declare-yes" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg">Обяви маркираните</button>
+                <button id="btn-declare-no" class="bg-slate-700/50 hover:bg-slate-600/50 border border-slate-500/50 text-white font-bold py-3 px-4 rounded-xl transition-all">Пазас (Не обявявай нищо)</button>
             </div>
         </div>
     </div>
 
-    <div id="belote-modal" class="fixed inset-0 bg-black bg-opacity-75 z-[70] hidden items-center justify-center">
-        <div class="bg-gray-800 border-2 border-yellow-500 rounded-xl p-6 max-w-sm w-full text-center shadow-[0_0_20px_rgba(236,201,75,0.6)]">
-            <h2 class="text-2xl font-bold text-white mb-4">Обявяване на Белот?</h2>
-            <p class="text-sm text-gray-300 mb-6">Играете Поп или Дама от коза. Искате ли да обявите "Белот" (20 точки)?</p>
-            <div class="flex gap-4 justify-center">
-                <button id="btn-belote-yes" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded transition">Да, обяви</button>
-                <button id="btn-belote-no" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded transition">Не (Пас)</button>
+    <div id="belote-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[70] hidden items-center justify-center px-4">
+        <div class="glass-panel modal-content border-yellow-500/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+            <div class="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-400/50 text-yellow-400 text-2xl font-black">20</div>
+            <h2 class="text-xl font-bold text-white mb-2">Обявяване на Белот?</h2>
+            <p class="text-sm text-slate-400 mb-6 bg-black/20 p-3 rounded-lg">Играете Поп или Дама от коза. Искате ли да обявите "Белот" (20 точки)?</p>
+            <div class="flex gap-3 justify-center">
+                <button id="btn-belote-yes" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg">Да</button>
+                <button id="btn-belote-no" class="flex-1 bg-red-500/80 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all">Не (Пазас)</button>
             </div>
         </div>
     </div>
@@ -702,8 +721,8 @@
         function addSeqDeclaration(decls, seq, suit) {
             let pts = 20;
             let typeName = 'Терца';
-            if (seq.length === 4) { pts = 50; typeName = 'Кварта'; }
-            else if (seq.length >= 5) { pts = 100; typeName = 'Квинта'; }
+            if (seq.length === 4) { pts = 50; typeName = 'Педесе'; }
+            else if (seq.length >= 5) { pts = 100; typeName = 'Сто'; }
 
             const topVal = seq[seq.length - 1];
             decls.push({
@@ -726,10 +745,10 @@
 
             decls.forEach((d, idx) => {
                 const label = document.createElement('label');
-                label.className = 'flex items-center gap-2 cursor-pointer bg-gray-700 p-2 rounded hover:bg-gray-600';
+                label.className = 'flex items-center gap-3 cursor-pointer bg-black/20 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors';
                 label.innerHTML = `
-                    <input type="checkbox" checked data-index="${idx}" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                    <span class="text-white text-sm font-semibold">${d.name}</span>
+                    <input type="checkbox" checked data-index="${idx}" class="w-5 h-5 text-blue-500 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2">
+                    <span class="text-white text-sm md:text-base font-semibold">${d.name}</span>
                 `;
                 listEl.appendChild(label);
             });
@@ -763,13 +782,19 @@
                 const bubble = document.getElementById('bubble-bottom');
                 bubble.textContent = selectedNames.join(', ');
                 bubble.style.opacity = '1';
+                bubble.style.transform = 'translateX(-50%) translateY(-10px)';
 
                 const logBar = document.getElementById('game-log-bar');
                 const logText = document.getElementById('log-text');
                 logBar.classList.remove('hidden');
                 logText.textContent = `Вие обявихте: ${selectedNames.join(', ')}`;
 
-                setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 6000);
+                setTimeout(() => { 
+                    if(bubble) {
+                        bubble.style.opacity = '0'; 
+                        bubble.style.transform = 'translateX(-50%) translateY(0)';
+                    }
+                }, 6000);
             }
 
             renderPlayerHand();
@@ -826,7 +851,7 @@
         function showError(msg) {
             errorMsg.textContent = msg;
             errorMsg.classList.remove('hidden');
-            setTimeout(() => errorMsg.classList.add('hidden'), 3000);
+            setTimeout(() => errorMsg.classList.add('hidden'), 4000);
         }
 
         function resetGameState() {
@@ -906,12 +931,18 @@
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
             ['bottom', 'right', 'top', 'left'].forEach(pos => {
                 const seat = document.getElementById(`seat-${pos}`);
-                if (seat) seat.style.borderColor = '#4a5568';
+                if (seat) {
+                    seat.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                    seat.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
+                }
             });
 
             if (currentTurn >= 0 && currentTurn <= 3) {
                 const activeSeat = document.getElementById(`seat-${posMap[currentTurn]}`);
-                if (activeSeat) activeSeat.style.borderColor = '#48bb78';
+                if (activeSeat) {
+                    activeSeat.style.borderColor = '#4ade80';
+                    activeSeat.style.boxShadow = '0 0 15px rgba(74,222,128,0.4)';
+                }
             }
         }
 
@@ -1000,7 +1031,7 @@
                         seatNameEl.textContent = player.name;
                     }
                 } else {
-                    seatBtn.className = 'seat-card hover:border-green-400 hover:bg-gray-700';
+                    seatBtn.className = 'seat-card';
                     seatNameEl.textContent = 'Свободно (Кликни)';
                     seatBtn.onclick = () => selectSeat(seatIdx);
                 }
@@ -1082,7 +1113,7 @@
                         }
                     } else {
                         nameElement.textContent = "Свободно";
-                        nameElement.className = "font-bold truncate text-sm text-gray-400 italic";
+                        nameElement.className = "font-bold truncate text-sm text-slate-400 italic";
                     }
                 }
             }
@@ -1145,8 +1176,7 @@
             lobbyView.style.display = 'none';
             gameView.style.display = 'flex';
             document.getElementById('display-room-code').textContent = 'ТРЕНИРОВКА';
-            document.getElementById('game-subtitle').textContent = 'Вие играете срещу 3 AI бота';
-            document.getElementById('center-info').style.opacity = '0.5';
+            document.getElementById('game-subtitle').textContent = 'Срещу 3 AI бота';
             document.getElementById('scoreboard').classList.remove('hidden');
             
             globalScore = { us: 0, them: 0 };
@@ -1183,10 +1213,10 @@
                 table.appendChild(cardEl);
                 
                 setTimeout(() => {
-                    if(targetPlayer === 0) cardEl.style.transform = 'translate(-50%, 200px)';
-                    else if(targetPlayer === 1) cardEl.style.transform = 'translate(300px, -50%)';
-                    else if(targetPlayer === 2) cardEl.style.transform = 'translate(-50%, -250px)';
-                    else if(targetPlayer === 3) cardEl.style.transform = 'translate(-350px, -50%)';
+                    if(targetPlayer === 0) cardEl.style.transform = 'translate(-50%, 220px)';
+                    else if(targetPlayer === 1) cardEl.style.transform = 'translate(320px, -50%)';
+                    else if(targetPlayer === 2) cardEl.style.transform = 'translate(-50%, -280px)';
+                    else if(targetPlayer === 3) cardEl.style.transform = 'translate(-380px, -50%)';
                     
                     cardEl.style.opacity = '0';
                     setTimeout(() => cardEl.remove(), 400);
@@ -1237,9 +1267,9 @@
                 document.getElementById(`seat-${pos}`).classList.remove('hidden');
             });
             document.getElementById('name-bottom').textContent = name;
-            document.getElementById('name-right').textContent = 'Бот';
-            document.getElementById('name-top').textContent = 'Бот';
-            document.getElementById('name-left').textContent = 'Бот';
+            document.getElementById('name-right').textContent = 'Бот Изток';
+            document.getElementById('name-top').textContent = 'Бот Север';
+            document.getElementById('name-left').textContent = 'Бот Запад';
 
             initDeck();
             trainingHands = [[], [], [], []];
@@ -1276,10 +1306,10 @@
                     const bid = btn.getAttribute('data-bid');
                     const bidVal = bidHierarchy[bid] || 0;
                     if (bidVal <= currentBidVal) {
-                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                        btn.classList.add('opacity-40', 'cursor-not-allowed', 'grayscale');
                         btn.disabled = true;
                     } else {
-                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        btn.classList.remove('opacity-40', 'cursor-not-allowed', 'grayscale');
                         btn.disabled = false;
                     }
                 });
@@ -1308,7 +1338,7 @@
 
                 biddingPanel.style.display = 'flex';
             } else {
-                aiTimeout = setTimeout(aiBid, 1000);
+                aiTimeout = setTimeout(aiBid, 1200);
             }
         }
         
@@ -1350,11 +1380,18 @@
             let displayBid = bid;
             if (bid === '♣') displayBid = '♣ Скапия';
             else if (bid === '♦') displayBid = '♦ Кало';
-            else if (bid === '♥') displayBid = '♥ Купа';
+            else if (bid === '♥') displayBid = '♥ Пука';
             else if (bid === '♠') displayBid = '♠ Пипа';
+            else if (bid === 'Под коньете') displayBid = 'Под коньете';
+            else if (bid === 'На коньете') displayBid = 'На коньете';
+            else if (bid === 'Пазас') displayBid = 'Пазас';
             
             bubble.textContent = displayBid;
             bubble.style.opacity = '1';
+            bubble.style.transform = 'translateY(-10px)';
+            
+            if (posMap[playerIndex] === 'bottom') bubble.style.transform = 'translateX(-50%) translateY(-10px)';
+            else if (posMap[playerIndex] === 'top') bubble.style.transform = 'translateX(-50%) translateY(10px)';
 
             const logBar = document.getElementById('game-log-bar');
             const logText = document.getElementById('log-text');
@@ -1382,7 +1419,10 @@
             if (consecutivePasses === 4 || (currentContract !== null && consecutivePasses === 3)) {
                 setTimeout(() => {
                     if (!isTrainingMode) return;
-                    document.querySelectorAll('.speech-bubble').forEach(b => b.style.opacity = '0');
+                    document.querySelectorAll('.speech-bubble').forEach(b => {
+                        b.style.opacity = '0';
+                        b.style.transform = 'none';
+                    });
 
                     if (currentContract === null) {
                         waitingMsg.textContent = "Всички казаха Пазас. Ново раздаване...";
@@ -1394,12 +1434,13 @@
                     } else {
                         callerTeam = (lastBidderIndex % 2 === 0) ? 0 : 1; 
                         
-                        let multStr = gameMultiplier === 2 ? ' (КОНТРА x2)' : gameMultiplier === 4 ? ' (РЕКОНТРА x4)' : '';
-                        contractDisplay.textContent = `Игра: ${currentContract}${multStr}`;
+                        let multStr = gameMultiplier === 2 ? ' (КОНТРА)' : gameMultiplier === 4 ? ' (РЕКОНТРА)' : '';
+                        contractDisplay.textContent = `${currentContract}${multStr}`;
                         contractDisplay.classList.remove('hidden');
                         
                         document.getElementById('current-game-value').textContent = `${currentContract}${multStr}`;
                         document.getElementById('current-game-indicator').classList.remove('hidden');
+                        document.getElementById('current-game-indicator').classList.add('flex');
 
                         waitingMsg.textContent = "Раздаване на останалите карти...";
                         dealRemainingCards();
@@ -1438,7 +1479,7 @@
         function handlePlayTurn() {
             if (!isTrainingMode) return;
             if (currentTurn !== 0) {
-                aiTimeout = setTimeout(aiPlay, 800 + Math.random() * 500);
+                aiTimeout = setTimeout(aiPlay, 1000 + Math.random() * 500);
             } else {
                 if (isFirstTrick && !hasShownDeclarations) {
                     hasShownDeclarations = true;
@@ -1458,7 +1499,7 @@
                         if (isTrainingMode && gamePhase === 'playing' && currentTurn === 0) {
                             playCard(0, 0);
                         }
-                    }, 300);
+                    }, 400);
                 }
             }
         }
@@ -1479,7 +1520,7 @@
                 });
                 
                 const posMap = {1: 'right', 2: 'top', 3: 'left'};
-                const playerNames = {1: 'Изток (Бот)', 2: 'Север (Бот)', 3: 'Запад (Бот)'};
+                const playerNames = {1: 'Изток', 2: 'Север', 3: 'Запад'};
                 const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
                 bubble.textContent = names.join(', ');
                 bubble.style.opacity = '1';
@@ -1497,8 +1538,8 @@
             if (trick.length === 0) return [...hand];
             
             const ledSuit = trick[0].card.suit;
-            const isAllTrumps = contract === 'На коньете';
-            const isNoTrumps = contract === 'Под коньете';
+            const isAllTrumps = contract.includes('На коньете');
+            const isNoTrumps = contract.includes('Под коньете');
             const trumpSuit = (!isAllTrumps && !isNoTrumps) ? contract.charAt(0) : null;
             
             const hasLedSuit = hand.some(c => c.suit === ledSuit);
@@ -1575,29 +1616,26 @@
                 cardEl.className = `card ${card.color} ${currentTurn === 0 && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
                 
                 const offset = index - (hand.length - 1) / 2;
-                const rotate = offset * (isMobile ? 2.5 : 5);
-                const translateY = Math.abs(offset) * (isMobile ? 1.2 : 2);
+                const rotate = offset * (isMobile ? 3 : 5.5);
+                const translateY = Math.abs(offset) * (isMobile ? 1.5 : 2.5);
                 
                 if (isMobile) {
-                    if (hand.length > 6) {
-                        cardEl.style.margin = "0 -8px";
-                    } else if (hand.length > 3) {
-                        cardEl.style.margin = "0 -3px";
-                    } else {
-                        cardEl.style.margin = "0 2px";
-                    }
+                    if (hand.length > 6) cardEl.style.margin = "0 -12px";
+                    else if (hand.length > 3) cardEl.style.margin = "0 -6px";
+                    else cardEl.style.margin = "0 0px";
                 }
                 
                 cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY}px)`;
                 cardEl.style.zIndex = index;
-                cardEl.innerHTML = `<div>${card.val}</div><div class="text-2xl md:text-3xl mt-1">${card.suit}</div>`;
+                cardEl.innerHTML = `<div class="text-[0.8em] font-bold absolute top-1 left-1.5 leading-none">${card.val}</div>
+                                    <div class="text-3xl md:text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">${card.suit}</div>
+                                    <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${card.val}</div>`;
                 
                 if (currentTurn === 0 && isValid) {
-                    const liftAmount = isMobile ? 35 : 20;
-                    const scaleAmount = isMobile ? 1.1 : 1;
+                    const liftAmount = isMobile ? 20 : 25;
                     
                     const handleHoverIn = () => {
-                        cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY - liftAmount}px) scale(${scaleAmount})`;
+                        cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY - liftAmount}px) scale(1.05)`;
                         cardEl.style.zIndex = 99;
                     };
                     const handleHoverOut = () => {
@@ -1626,8 +1664,8 @@
             const playedCard = trainingHands[playerIndex][cardIndex];
             let isBeloteSituation = false;
 
-            if (currentContract !== 'Под коньете') {
-                const isAllTrumps = currentContract === 'На коньете';
+            if (!currentContract.includes('Под коньете')) {
+                const isAllTrumps = currentContract.includes('На коньете');
                 const trumpSuit = (!isAllTrumps) ? currentContract.charAt(0) : null;
                 
                 let isValidBeloteSuit = true;
@@ -1666,7 +1704,7 @@
                 const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
                 const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
                 let prevText = bubble.style.opacity === '1' ? bubble.textContent + ', ' : '';
-                bubble.textContent = prevText + 'Белот (20т.)';
+                bubble.textContent = prevText + 'Белот';
                 bubble.style.opacity = '1';
                 setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 3000);
             }
@@ -1684,7 +1722,7 @@
             if (currentTrick.length === 4) {
                 currentTurn = -1;
                 updateTurnVisuals();
-                aiTimeout = setTimeout(resolveTrick, 1500);
+                aiTimeout = setTimeout(resolveTrick, 1800);
             } else {
                 currentTurn = (currentTurn + 1) % 4;
                 updateTurnVisuals();
@@ -1712,14 +1750,16 @@
                 const animClass = isLastCard ? `anim-throw-${play.player}` : '';
                 
                 cardEl.className = `card trick-card ${play.card.color} trick-p${play.player} ${animClass}`;
-                cardEl.innerHTML = `<div>${play.card.val}</div><div class="text-3xl mt-1">${play.card.suit}</div>`;
+                cardEl.innerHTML = `<div class="text-[0.8em] font-bold absolute top-1 left-1.5 leading-none">${play.card.val}</div>
+                                    <div class="text-3xl md:text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">${play.card.suit}</div>
+                                    <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${play.card.val}</div>`;
                 trickArea.appendChild(cardEl);
             });
         }
 
         function getCardPoints(card, contractStr) {
-            const isAllTrumps = contractStr === 'На коньете';
-            const isNoTrumps = contractStr === 'Под коньете';
+            const isAllTrumps = contractStr.includes('На коньете');
+            const isNoTrumps = contractStr.includes('Под коньете');
             const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(0) : null;
             
             const isTrumpHierarchy = isAllTrumps || (card.suit === contractSuit);
@@ -1732,8 +1772,8 @@
         }
 
         function getCardPower(card, ledSuit, contractStr) {
-            const isAllTrumps = contractStr === 'На коньете';
-            const isNoTrumps = contractStr === 'Под коньете';
+            const isAllTrumps = contractStr.includes('На коньете');
+            const isNoTrumps = contractStr.includes('Под коньете');
             const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(0) : null;
             
             const isTrumpSuit = (!isAllTrumps && !isNoTrumps && card.suit === contractSuit);
@@ -1794,13 +1834,13 @@
 
             const trickCards = document.querySelectorAll('.trick-card');
             trickCards.forEach(cardEl => {
-                cardEl.style.transition = 'all 0.5s ease-in-out';
+                cardEl.style.transition = 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
                 cardEl.style.opacity = '0';
                 
-                if (winnerPos === 'bottom') cardEl.style.transform = 'translate(-50%, 250px) scale(0.2)';
-                else if (winnerPos === 'right') cardEl.style.transform = 'translate(250px, -50%) scale(0.2)';
-                else if (winnerPos === 'top') cardEl.style.transform = 'translate(-50%, -250px) scale(0.2)';
-                else if (winnerPos === 'left') cardEl.style.transform = 'translate(-250px, -50%) scale(0.2)';
+                if (winnerPos === 'bottom') cardEl.style.transform = 'translate(-50%, 350px) scale(0.1)';
+                else if (winnerPos === 'right') cardEl.style.transform = 'translate(350px, -50%) scale(0.1)';
+                else if (winnerPos === 'top') cardEl.style.transform = 'translate(-50%, -350px) scale(0.1)';
+                else if (winnerPos === 'left') cardEl.style.transform = 'translate(-350px, -50%) scale(0.1)';
             });
             
             if (isFirstTrick) isFirstTrick = false;
@@ -1817,12 +1857,12 @@
                     updateTurnVisuals();
                     handlePlayTurn();
                 }
-            }, 500);
+            }, 600);
         }
 
         function getDeclPower(d) {
-            const isAllTrumps = currentContract === 'На коньете';
-            const trumpSuit = (!isAllTrumps && currentContract !== 'Под коньете') ? currentContract.charAt(0) : null;
+            const isAllTrumps = currentContract.includes('На коньете');
+            const trumpSuit = (!isAllTrumps && !currentContract.includes('Под коньете')) ? currentContract.charAt(0) : null;
             const isTrump = d.suit === trumpSuit;
 
             if (d.isCarre) {
@@ -1881,7 +1921,7 @@
             if (tricksWon.us === 8) usCardPoints += 90;
             if (tricksWon.them === 8) themCardPoints += 90;
 
-            if (currentContract === 'Под коньете') {
+            if (currentContract.includes('Под коньете')) {
                 usCardPoints = (roundScore.us * 2) + (tricksWon.us === 8 ? 90 : 0);
                 themCardPoints = (roundScore.them * 2) + (tricksWon.them === 8 ? 90 : 0);
             }
@@ -1926,7 +1966,7 @@
                 return [p1, p2];
             }
 
-            const isAllTrumpsContract = currentContract === 'На коньете';
+            const isAllTrumpsContract = currentContract.includes('На коньете');
             let [baseUsPoints, baseThemPoints] = calculateBelotePoints(usRaw, themRaw, isAllTrumpsContract);
             let baseTotalPoints = baseUsPoints + baseThemPoints;
 
@@ -1977,18 +2017,26 @@
             document.getElementById('score-them').textContent = globalScore.them;
 
             let summaryHtml = `
-                <div class="space-y-2 text-left">
-                    <p class="font-bold text-yellow-400">Игра: ${currentContract}</p>
-                    <p>Точки от ръце: <b>Ние ${usCardPoints}</b> - <b>Вие ${themCardPoints}</b></p>
-                    <p>Анонси и Белот: <b>Ние ${declPoints.us}</b> - <b>Вие ${declPoints.them}</b></p>
-                    <p class="border-t border-gray-600 pt-2 font-bold text-green-400">Точки за рунда: Ние +${usPoints} | Вие +${themPoints}</p>
-                    <p class="text-xl font-bold text-white mt-2">Общ резултат: Ние ${globalScore.us} - ${globalScore.them} Вие</p>
+                <div class="space-y-3 text-left">
+                    <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${currentContract} ${gameMultiplier > 1 ? '(x'+gameMultiplier+')' : ''}</p>
+                    <div class="flex justify-between text-slate-300">
+                        <span>Точки от ръце:</span>
+                        <span class="font-mono">Ние <b>${usCardPoints}</b> - Вие <b>${themCardPoints}</b></span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>Анонси/Белот:</span>
+                        <span class="font-mono">Ние <b>${declPoints.us}</b> - Вие <b>${declPoints.them}</b></span>
+                    </div>
+                    <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
+                        <p class="font-bold text-green-400 text-center">Точки за рунда: Ние +${usPoints} | Вие +${themPoints}</p>
+                    </div>
+                    <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
                 </div>
             `;
 
             if (globalScore.us >= 151 || globalScore.them >= 151) {
-                let winnerText = globalScore.us >= 151 ? "Победа за Вашия Отбор!" : "Победа за Ботовете!";
-                showModal(`КРАЙ НА ИГРАТА - ${winnerText}`, summaryHtml, () => {
+                let winnerText = globalScore.us >= 151 ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
+                showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
                 });
