@@ -40,10 +40,10 @@
             z-index: 10;
         }
 
-        .seat-bottom { bottom: -20px; left: 50%; transform: translate(-50%, 0); }
-        .seat-top { top: -20px; left: 50%; transform: translate(-50%, -100%); }
-        .seat-left { top: 50%; left: 10px; transform: translate(0, -50%); }
-        .seat-right { top: 50%; right: 10px; transform: translate(0, -50%); }
+        .seat-bottom { bottom: -20px; left: 50%; transform: translate(-50%, 0); z-index: 50; }
+        .seat-top { top: -20px; left: 50%; transform: translate(-50%, -100%); z-index: 50; }
+        .seat-left { top: 50%; left: 10px; transform: translate(0, -50%); z-index: 50; }
+        .seat-right { top: 50%; right: 10px; transform: translate(0, -50%); z-index: 50; }
 
         .card {
             width: min(15vw, 68px);
@@ -131,7 +131,7 @@
             padding: 4px 8px;
             font-size: 12px;
             font-weight: bold;
-            z-index: 40;
+            z-index: 100;
             opacity: 0;
             transition: opacity 0.3s;
             pointer-events: none;
@@ -144,7 +144,7 @@
             border-width: 6px;
             border-style: solid;
         }
-        .seat-bottom .speech-bubble { top: -35px; left: 50%; transform: translateX(-50%); }
+        .seat-bottom .speech-bubble { top: -45px; left: 50%; transform: translateX(-50%); z-index: 100; }
         .seat-bottom .speech-bubble::after { bottom: -11px; left: 50%; transform: translateX(-50%); border-color: white transparent transparent transparent; }
         
         .seat-top .speech-bubble { bottom: -35px; left: 50%; transform: translateX(-50%); }
