@@ -668,7 +668,7 @@
                     if (val === 'J') pts = 200;
                     decls.push({
                         type: 'carre',
-                        name: `Каре (${val}) - ${pts}т.`,
+                        name: `Каре (${pts}т.)`,
                         points: pts,
                         isCarre: true,
                         carreRank: carreRankMap[val] || 0
@@ -708,7 +708,7 @@
             const topVal = seq[seq.length - 1];
             decls.push({
                 type: 'seq',
-                name: `${typeName} до ${topVal} ${suit} (${pts}т.)`,
+                name: `${typeName} ${suit} (${pts}т.)`,
                 points: pts,
                 suit: suit,
                 length: seq.length,
