@@ -1417,10 +1417,59 @@
             }
 
             let nextTurn = (roomData.currentTurn + 1) % 4;
-            let newPhase = 'bidding';
+
+            // Логика за 4 Пазаса или 3 Пазаса след анонс
+            if (passes === 4 && newContract === null) {
+                // Ново раздаване, ако всички кажат Пазас
+                initDeck();
+                let newDealer = (roomData.dealerIndex + 1) % 4;
+                let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
+
+                let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
+                for (let r = 0; r < 5; r++) {
+                    for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
+                }
+
+                await updateDoc(getRoomPath(currentRoomCode), {
+                    dealerIndex: newDealer,
+                    currentTurn: (newDealer + 1) % 4,
+                    hands: playerHands,
+                    deck: deck,
+                    consecutivePasses: 0,
+                    currentContract: null,
+                    currentContractRaw: null,
+                    lastBidText: 'Пазас (Ново раздаване)',
+                    lastBidPlayer: roomData.currentTurn
+                });
+                return;
+            }
 
             if (passes >= 3 && newContract !== null) {
-                newPhase = 'playing';
+                // Раздаване на останалите 3 карти при одобрен анонс
+                let currentDeck = [...(roomData.deck || [])];
+                if (currentDeck.length < 12) {
+                    initDeck();
+                    currentDeck = deck;
+                }
+                
+                let updatedHands = { ...roomData.hands };
+                let dealOrder = [(roomData.dealerIndex + 1) % 4, (roomData.dealerIndex + 2) % 4, (roomData.dealerIndex + 3) % 4, roomData.dealerIndex];
+
+                for (let r = 0; r < 3; r++) {
+                    for (let p of dealOrder) {
+                        updatedHands[`hand_${p}`].push(currentDeck.pop());
+                    }
+                }
+
+                await updateDoc(getRoomPath(currentRoomCode), {
+                    gamePhase: 'playing',
+                    hands: updatedHands,
+                    deck: currentDeck,
+                    currentTurn: (roomData.dealerIndex + 1) % 4,
+                    lastBidText: bid,
+                    lastBidPlayer: roomData.currentTurn
+                });
+                return;
             }
 
             await updateDoc(getRoomPath(currentRoomCode), {
@@ -1428,7 +1477,6 @@
                 currentContract: newContract,
                 currentContractRaw: newContractRaw,
                 consecutivePasses: passes,
-                gamePhase: newPhase,
                 lastBidText: bid,
                 lastBidPlayer: roomData.currentTurn
             });
@@ -1482,10 +1530,58 @@
                     }
 
                     let nextTurn = (currentTurn + 1) % 4;
-                    let newPhase = 'bidding';
 
+                    // 4 Пазаса - ново раздаване
+                    if (passes === 4 && newContract === null) {
+                        initDeck();
+                        let newDealer = (roomData.dealerIndex + 1) % 4;
+                        let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
+
+                        let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
+                        for (let r = 0; r < 5; r++) {
+                            for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
+                        }
+
+                        await updateDoc(roomRef, {
+                            dealerIndex: newDealer,
+                            currentTurn: (newDealer + 1) % 4,
+                            hands: playerHands,
+                            deck: deck,
+                            consecutivePasses: 0,
+                            currentContract: null,
+                            currentContractRaw: null,
+                            lastBidText: 'Пазас (Ново раздаване)',
+                            lastBidPlayer: mySeatIndex
+                        });
+                        return;
+                    }
+
+                    // 3 Пазаса след обявен коз -> Раздаване на останалите 3 карти
                     if (passes >= 3 && newContract !== null) {
-                        newPhase = 'playing';
+                        let currentDeck = [...(roomData.deck || [])];
+                        if (currentDeck.length < 12) {
+                            initDeck();
+                            currentDeck = deck;
+                        }
+
+                        let updatedHands = { ...roomData.hands };
+                        let dealOrder = [(roomData.dealerIndex + 1) % 4, (roomData.dealerIndex + 2) % 4, (roomData.dealerIndex + 3) % 4, roomData.dealerIndex];
+
+                        for (let r = 0; r < 3; r++) {
+                            for (let p of dealOrder) {
+                                updatedHands[`hand_${p}`].push(currentDeck.pop());
+                            }
+                        }
+
+                        await updateDoc(roomRef, {
+                            gamePhase: 'playing',
+                            hands: updatedHands,
+                            deck: currentDeck,
+                            currentTurn: (roomData.dealerIndex + 1) % 4,
+                            lastBidText: bid,
+                            lastBidPlayer: mySeatIndex
+                        });
+                        return;
                     }
 
                     await updateDoc(roomRef, {
@@ -1493,7 +1589,6 @@
                         currentContract: newContract,
                         currentContractRaw: newContractRaw,
                         consecutivePasses: passes,
-                        gamePhase: newPhase,
                         lastBidText: bid,
                         lastBidPlayer: mySeatIndex
                     });
