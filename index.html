@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- SEO & Open Graph -->
     <title>Играй Белот Онлайн – Мултиплейър и Безплатна Тренировка</title>
     <meta name="description" content="Играй онлайн белот с приятели или се състезавай срещу умни ботове. Напълно безплатна игра на карти Белот с класически български правила и бързи стаи!">
     <link rel="canonical" href="https://yourusername.github.io/belote/">
@@ -59,11 +57,7 @@
             background: radial-gradient(circle, #227042 0%, #0c331a 100%);
             border: 14px solid #3d2314;
             border-radius: 9999px;
-            box-shadow: 
-                0 0 0 3px #1a0e08, 
-                inset 0 0 0 3px #d4af37, 
-                inset 0 0 40px rgba(0,0,0,0.8), 
-                0 25px 50px -12px rgba(0,0,0,0.7);
+            box-shadow: 0 0 0 3px #1a0e08, inset 0 0 0 3px #d4af37, inset 0 0 40px rgba(0,0,0,0.8), 0 25px 50px -12px rgba(0,0,0,0.7);
             position: relative;
             width: min(85vw, 850px);
             height: min(50vh, 600px);
@@ -307,16 +301,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
 
-        @keyframes throwCard0 { from { transform: translate(-50%, 180px) scale(0.3); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
-        @keyframes throwCard1 { from { transform: translate(180px, -50%) scale(0.3); opacity: 0; } to { transform: translateY(-50%) rotate(-85deg) scale(1); opacity: 1; } }
-        @keyframes throwCard2 { from { transform: translate(-50%, -180px) scale(0.3); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
-        @keyframes throwCard3 { from { transform: translate(-180px, -50%) scale(0.3); opacity: 0; } to { transform: translateY(-50%) rotate(85deg) scale(1); opacity: 1; } }
-
-        .anim-throw-0 { animation: throwCard0 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .anim-throw-1 { animation: throwCard1 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .anim-throw-2 { animation: throwCard2 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .anim-throw-3 { animation: throwCard3 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-
         #custom-modal { display: none; }
         
         .modal-content {
@@ -327,9 +311,6 @@
             100% { transform: scale(1); opacity: 1; } 
         }
 
-        /* ---------------------------------------------------- */
-        /*   ОПТИМИЗИРАН МОБИЛЕН CSS РЕЖИМ                      */
-        /* ---------------------------------------------------- */
         @media (max-width: 640px) {
             body {
                 padding: 0;
@@ -432,7 +413,6 @@
                 z-index: 120; 
             }
 
-            /* ВЗЯТКАТА В СРЕДАТА (РАЗДАЛЕЧЕНИ КАРТИ) */
             #trick-area { 
                 width: 210px !important; 
                 height: 210px !important; 
@@ -525,7 +505,6 @@
         </div>
         <p id="lobby-error" class="text-red-400 mt-3 text-sm font-medium hidden bg-red-900/50 p-2 rounded-lg"></p>
 
-        <!-- SEO Content Block (300+ words) -->
         <div class="mt-8 text-left text-xs text-slate-400 border-t border-slate-700/50 pt-4 space-y-2">
             <h2 class="text-sm font-bold text-slate-200">За Играта Белот</h2>
             <p>
@@ -739,11 +718,12 @@
         let currentUser = null;
         let currentRoomCode = null;
         let unsubscribeRoom = null;
+        let unsubscribeSeatSelect = null;
         let mySeatIndex = -1;
         let isTrainingMode = false;
 
-        // Game State
-        let trainingHands = [[], [], [], []];
+        // Local State
+        let myHandCards = [];
         let currentTrick = [];
         let currentTurn = 0;
         let aiTimeout = null;
@@ -755,10 +735,8 @@
         
         let gameMultiplier = 1;
         let kontraBidderIndex = -1;
-        
         let isFirstTrick = true;
         let hasShownDeclarations = false;
-        
         let allDeclaredItems = []; 
         let belotePointsRound = { us: 0, them: 0 };
         let myPendingDeclarations = [];
@@ -821,15 +799,10 @@
             
             Object.keys(valCounts).forEach(val => {
                 if (valCounts[val] === 4 && val !== '7' && val !== '8') {
-                    let pts = 100;
-                    if (val === 'J') pts = 200;
+                    let pts = (val === 'J') ? 200 : 100;
                     decls.push({
-                        type: 'carre',
-                        publicName: 'Каре',
-                        name: `Каре (${pts}т.)`,
-                        points: pts,
-                        isCarre: true,
-                        carreRank: carreRankMap[val] || 0
+                        type: 'carre', publicName: 'Каре', name: `Каре (${pts}т.)`,
+                        points: pts, isCarre: true, carreRank: carreRankMap[val] || 0
                     });
                 }
             });
@@ -860,14 +833,9 @@
 
             const topVal = seq[seq.length - 1];
             decls.push({
-                type: 'seq',
-                publicName: typeName,
-                name: `${typeName} ${suit} (${pts}т.)`,
-                points: pts,
-                suit: suit,
-                length: seq.length,
-                topValIndex: seqOrder.indexOf(topVal),
-                isCarre: false
+                type: 'seq', publicName: typeName, name: `${typeName} ${suit} (${pts}т.)`,
+                points: pts, suit: suit, length: seq.length,
+                topValIndex: seqOrder.indexOf(topVal), isCarre: false
             });
         }
 
@@ -931,9 +899,7 @@
         });
 
         document.getElementById('btn-declare-no').addEventListener('click', () => {
-            const modalEl = document.getElementById('declarations-modal');
-            modalEl.classList.add('hidden');
-            modalEl.classList.remove('flex');
+            document.getElementById('declarations-modal').classList.add('hidden');
             renderPlayerHand();
         });
 
@@ -949,7 +915,7 @@
             if (pendingBeloteCardIndex !== -1) {
                 const idx = pendingBeloteCardIndex;
                 pendingBeloteCardIndex = -1;
-                playCard(0, idx, true);
+                playCard(mySeatIndex !== -1 ? mySeatIndex : 0, idx, true);
             }
         });
 
@@ -958,7 +924,7 @@
             if (pendingBeloteCardIndex !== -1) {
                 const idx = pendingBeloteCardIndex;
                 pendingBeloteCardIndex = -1;
-                playCard(0, idx, false);
+                playCard(mySeatIndex !== -1 ? mySeatIndex : 0, idx, false);
             }
         });
 
@@ -983,9 +949,10 @@
         function resetGameState() {
             if (aiTimeout) clearTimeout(aiTimeout);
             if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            if (unsubscribeSeatSelect) { unsubscribeSeatSelect(); unsubscribeSeatSelect = null; }
 
             gamePhase = 'waiting';
-            trainingHands = [[], [], [], []];
+            myHandCards = [];
             currentTrick = [];
             currentTurn = 0;
             currentContract = null;
@@ -1031,8 +998,9 @@
                 if (badge) badge.style.display = 'none';
             });
 
+            const relTurn = mySeatIndex !== -1 ? (dealerIndex - mySeatIndex + 4) % 4 : dealerIndex;
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
-            const activeBadge = document.getElementById(`dealer-${posMap[dealerIndex]}`);
+            const activeBadge = document.getElementById(`dealer-${posMap[relTurn]}`);
             if (activeBadge) activeBadge.style.display = 'flex';
         }
 
@@ -1046,8 +1014,9 @@
                 }
             });
 
-            if (currentTurn >= 0 && currentTurn <= 3) {
-                const activeSeat = document.getElementById(`seat-${posMap[currentTurn]}`);
+            const relTurn = mySeatIndex !== -1 ? (currentTurn - mySeatIndex + 4) % 4 : currentTurn;
+            if (relTurn >= 0 && relTurn <= 3) {
+                const activeSeat = document.getElementById(`seat-${posMap[relTurn]}`);
                 if (activeSeat) {
                     activeSeat.style.borderColor = '#4ade80';
                     activeSeat.style.boxShadow = '0 0 15px rgba(74,222,128,0.4)';
@@ -1104,7 +1073,7 @@
         }
 
         function listenToRoomSeatSelection(code) {
-            unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
+            unsubscribeSeatSelect = onSnapshot(getRoomPath(code), (docSnap) => {
                 if (!docSnap.exists()) {
                     showModal("Внимание", "Стаята беше затворена.", () => leaveRoomAndReset());
                     return;
@@ -1168,9 +1137,13 @@
             }
         }
 
-        document.getElementById('btn-start-multiplayer').addEventListener('click', () => {
+        document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1) return;
-            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            
+            if (unsubscribeSeatSelect) {
+                unsubscribeSeatSelect();
+                unsubscribeSeatSelect = null;
+            }
 
             seatSelectView.style.display = 'none';
             gameView.style.display = 'flex';
@@ -1178,6 +1151,13 @@
             document.getElementById('game-subtitle').textContent = 'Споделете този код с приятели';
 
             updateMultiplayerSeatNames(currentRoomSeats);
+
+            // Ако 4-мата са заели местата и лобито е Host, стартираме раздаването
+            const filledSeats = currentRoomSeats.filter(s => s !== null).length;
+            if (filledSeats === 4 && mySeatIndex === 0) {
+                await startMultiplayerGameInDb(currentRoomCode);
+            }
+
             listenToRoom(currentRoomCode);
         });
 
@@ -1249,14 +1229,10 @@
                     updateMultiplayerSeatNames(data.seats);
                     
                     const filledSeats = data.seats.filter(s => s !== null).length;
-                    
-                    // Ако 4-мата играчи са на масата и играта е чакаща, Host (първият) я стартира в DB
-                    if (filledSeats === 4 && data.status === 'waiting') {
-                        if (mySeatIndex === 0) {
-                            startMultiplayerGameInDb(code);
-                        }
-                    } else if (filledSeats < 4 && data.status === 'playing') {
-                        waitingMsg.textContent = `Изчакваме играчи (${filledSeats}/4)...`;
+                    if (filledSeats < 4) {
+                        waitingMsg.textContent = `Изчакваме 4 играчи (${filledSeats}/4)...`;
+                    } else {
+                        waitingMsg.textContent = "";
                     }
 
                     if (data.status === 'playing') {
@@ -1309,11 +1285,24 @@
             dealerIndex = data.dealerIndex;
             currentTurn = data.currentTurn;
             currentContract = data.currentContract;
-            
+            currentContractRaw = data.currentContractRaw;
+            gameMultiplier = data.gameMultiplier || 1;
+            lastBidderIndex = data.lastBidderIndex ?? -1;
+            kontraBidderIndex = data.kontraBidderIndex ?? -1;
+
             if (data.hands && data.hands[mySeatIndex]) {
-                trainingHands[0] = data.hands[mySeatIndex];
+                myHandCards = data.hands[mySeatIndex];
                 sortPlayerHand();
                 renderPlayerHand();
+            }
+
+            if (currentContract) {
+                let multStr = gameMultiplier === 2 ? ' (КОНТРА)' : gameMultiplier === 4 ? ' (РЕКОНТРА)' : '';
+                contractDisplay.textContent = `${currentContract}${multStr}`;
+                contractDisplay.classList.remove('hidden');
+                document.getElementById('current-game-value').textContent = `${currentContract}${multStr}`;
+                document.getElementById('current-game-indicator').classList.remove('hidden');
+                document.getElementById('current-game-indicator').classList.add('flex');
             }
 
             updateDealerVisuals();
@@ -1337,7 +1326,7 @@
         }
 
         /* ------------------------------------------------------------------ */
-        /* TRAINING MODE & LOCAL GAME ENGINE                                  */
+        /* LOCAL GAME ENGINE & HANDLERS                                       */
         /* ------------------------------------------------------------------ */
         document.getElementById('btn-training').addEventListener('click', () => {
             resetGameState();
@@ -1396,7 +1385,8 @@
         }
 
         function sortPlayerHand() {
-            trainingHands[0].sort((a, b) => {
+            let targetHand = isTrainingMode ? trainingHands[0] : myHandCards;
+            targetHand.sort((a, b) => {
                 if(a.suit === b.suit) return values.indexOf(a.val) - values.indexOf(b.val);
                 return suits.indexOf(a.suit) - suits.indexOf(b.suit);
             });
@@ -1457,28 +1447,29 @@
         }
         
         function handleBiddingTurn() {
+            const currentBidVal = currentContractRaw ? (bidHierarchy[currentContractRaw] || 0) : 0;
+            document.querySelectorAll('.bid-btn:not(.pass):not(.kontra):not(.rekontra)').forEach(btn => {
+                const bid = btn.getAttribute('data-bid');
+                const bidVal = bidHierarchy[bid] || 0;
+                if (bidVal <= currentBidVal) {
+                    btn.classList.add('opacity-40', 'cursor-not-allowed', 'grayscale');
+                    btn.disabled = true;
+                } else {
+                    btn.classList.remove('opacity-40', 'cursor-not-allowed', 'grayscale');
+                    btn.disabled = false;
+                }
+            });
+
+            const btnKontra = document.getElementById('btn-kontra');
+            const btnRekontra = document.getElementById('btn-rekontra');
+            const isOpponentContract = currentContract !== null && (lastBidderIndex % 2 !== currentTurn % 2);
+            const isOpponentKontra = gameMultiplier === 2 && (kontraBidderIndex % 2 !== currentTurn % 2);
+
+            btnKontra.style.display = (isOpponentContract && gameMultiplier === 1) ? 'block' : 'none';
+            btnRekontra.style.display = isOpponentKontra ? 'block' : 'none';
+
             if (isTrainingMode) {
                 if (currentTurn === 0) {
-                    const currentBidVal = currentContractRaw ? (bidHierarchy[currentContractRaw] || 0) : 0;
-                    document.querySelectorAll('.bid-btn:not(.pass):not(.kontra):not(.rekontra)').forEach(btn => {
-                        const bid = btn.getAttribute('data-bid');
-                        const bidVal = bidHierarchy[bid] || 0;
-                        if (bidVal <= currentBidVal) {
-                            btn.classList.add('opacity-40', 'cursor-not-allowed', 'grayscale');
-                            btn.disabled = true;
-                        } else {
-                            btn.classList.remove('opacity-40', 'cursor-not-allowed', 'grayscale');
-                            btn.disabled = false;
-                        }
-                    });
-
-                    const btnKontra = document.getElementById('btn-kontra');
-                    const btnRekontra = document.getElementById('btn-rekontra');
-                    const isOpponentContract = currentContract !== null && (lastBidderIndex % 2 !== 0);
-                    const isOpponentKontra = gameMultiplier === 2 && (kontraBidderIndex % 2 !== 0);
-
-                    btnKontra.style.display = (isOpponentContract && gameMultiplier === 1) ? 'block' : 'none';
-                    btnRekontra.style.display = isOpponentKontra ? 'block' : 'none';
                     biddingPanel.style.display = 'flex';
                 } else {
                     aiTimeout = setTimeout(aiBid, 1200);
@@ -1490,12 +1481,68 @@
         }
         
         document.querySelectorAll('.bid-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 if (gamePhase !== 'bidding') return;
                 biddingPanel.style.display = 'none';
-                processBid(currentTurn, e.target.getAttribute('data-bid'));
+                
+                const bid = e.target.getAttribute('data-bid');
+                if (isTrainingMode) {
+                    processBid(currentTurn, bid);
+                } else {
+                    await processMultiplayerBidInDb(mySeatIndex, bid);
+                }
             });
         });
+
+        async function processMultiplayerBidInDb(playerIndex, bid) {
+            let roomRef = getRoomPath(currentRoomCode);
+            let displayBid = bid;
+            if (bid === '♣') displayBid = '♣ Скапия';
+            else if (bid === '♦') displayBid = '♦ Кало';
+            else if (bid === '♥') displayBid = '♥ Пука';
+            else if (bid === '♠') displayBid = '♠ Пипа';
+
+            let updates = {};
+            let newConsecutivePasses = consecutivePasses;
+            let newMultiplier = gameMultiplier;
+            let newKontraBidder = kontraBidderIndex;
+            let newLastBidder = lastBidderIndex;
+            let newContract = currentContract;
+            let newContractRaw = currentContractRaw;
+
+            if (bid === 'Пазас') {
+                newConsecutivePasses++;
+            } else if (bid === 'Контра') {
+                newMultiplier = 2; newKontraBidder = playerIndex; newConsecutivePasses = 0;
+            } else if (bid === 'Реконтра') {
+                newMultiplier = 4; newConsecutivePasses = 0;
+            } else {
+                newContract = displayBid; newContractRaw = bid; newMultiplier = 1; newKontraBidder = -1; newConsecutivePasses = 0; newLastBidder = playerIndex;
+            }
+
+            updates = {
+                consecutivePasses: newConsecutivePasses,
+                gameMultiplier: newMultiplier,
+                kontraBidderIndex: newKontraBidder,
+                lastBidderIndex: newLastBidder,
+                currentContract: newContract,
+                currentContractRaw: newContractRaw,
+                currentTurn: (currentTurn + 1) % 4
+            };
+
+            if (newConsecutivePasses === 4 || (newContract !== null && newConsecutivePasses === 3)) {
+                if (newContract === null) {
+                    updates.status = 'waiting';
+                    updates.gamePhase = 'waiting';
+                    updates.dealerIndex = (dealerIndex + 1) % 4;
+                } else {
+                    updates.gamePhase = 'playing';
+                    updates.currentTurn = (dealerIndex + 1) % 4;
+                }
+            }
+
+            await updateDoc(roomRef, updates);
+        }
 
         function aiBid() {
             if (!isTrainingMode) return;
@@ -1516,7 +1563,8 @@
         function processBid(playerIndex, bid) {
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
             const playerNames = ['Вие', 'Изток (Бот)', 'Север (Бот)', 'Запад (Бот)'];
-            const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
+            const relIndex = isTrainingMode ? playerIndex : (playerIndex - mySeatIndex + 4) % 4;
+            const bubble = document.getElementById(`bubble-${posMap[relIndex]}`);
             
             let displayBid = bid;
             if (bid === '♣') displayBid = '♣ Скапия';
@@ -1524,16 +1572,17 @@
             else if (bid === '♥') displayBid = '♥ Пука';
             else if (bid === '♠') displayBid = '♠ Пипа';
             
-            bubble.textContent = displayBid;
-            bubble.style.opacity = '1';
-
-            if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
-            bubble.hideTimeout = setTimeout(() => { if (bubble) bubble.style.opacity = '0'; }, 2000);
+            if (bubble) {
+                bubble.textContent = displayBid;
+                bubble.style.opacity = '1';
+                if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+                bubble.hideTimeout = setTimeout(() => { if (bubble) bubble.style.opacity = '0'; }, 2000);
+            }
 
             const logBar = document.getElementById('game-log-bar');
             const logText = document.getElementById('log-text');
             logBar.classList.remove('hidden');
-            logText.textContent = `${playerNames[playerIndex]}: ${displayBid}`;
+            logText.textContent = `${playerNames[relIndex] || 'Играч'}: ${displayBid}`;
             
             if (bid === 'Пазас') {
                 consecutivePasses++;
@@ -1619,16 +1668,17 @@
                 const posMap = {1: 'right', 2: 'top', 3: 'left'};
                 const playerNames = {1: 'Изток', 2: 'Север', 3: 'Запад'};
                 const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
-                bubble.textContent = publicNames.join(', ');
-                bubble.style.opacity = '1';
+                if (bubble) {
+                    bubble.textContent = publicNames.join(', ');
+                    bubble.style.opacity = '1';
+                    if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+                    bubble.hideTimeout = setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 2500);
+                }
 
                 const logBar = document.getElementById('game-log-bar');
                 const logText = document.getElementById('log-text');
                 logBar.classList.remove('hidden');
                 logText.textContent = `${playerNames[playerIndex]} обяви: ${publicNames.join(', ')}`;
-
-                if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
-                bubble.hideTimeout = setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 2500);
             }
         }
 
@@ -1686,14 +1736,16 @@
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
             
-            const hand = trainingHands[0];
-            let validCards = (gamePhase === 'playing' && currentTurn === 0) ? getValidCards(hand, currentTrick, currentContract) : [...hand];
+            const hand = isTrainingMode ? trainingHands[0] : myHandCards;
+            const isMyTurn = isTrainingMode ? (currentTurn === 0) : (currentTurn === mySeatIndex);
+            
+            let validCards = (gamePhase === 'playing' && isMyTurn) ? getValidCards(hand, currentTrick, currentContract) : [...hand];
             const isMobile = window.innerWidth <= 768;
             
             hand.forEach((card, index) => {
                 const isValid = validCards.includes(card);
                 const cardEl = document.createElement('div');
-                cardEl.className = `card ${card.color} ${currentTurn === 0 && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
+                cardEl.className = `card ${card.color} ${isMyTurn && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
                 
                 const offset = index - (hand.length - 1) / 2;
                 const rotate = offset * (isMobile ? 3 : 5.5);
@@ -1711,7 +1763,7 @@
                                     <div class="text-3xl md:text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">${card.suit}</div>
                                     <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${card.val}</div>`;
                 
-                if (currentTurn === 0 && isValid) {
+                if (isMyTurn && isValid) {
                     const liftAmount = isMobile ? 20 : 25;
                     const handleHoverIn = () => { cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY - liftAmount}px) scale(1.05)`; cardEl.style.zIndex = 99; };
                     const handleHoverOut = () => { cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY}px) scale(1)`; cardEl.style.zIndex = index; };
@@ -1721,7 +1773,7 @@
                     cardEl.addEventListener('touchstart', handleHoverIn, { passive: true });
                     cardEl.addEventListener('touchend', handleHoverOut, { passive: true });
                     cardEl.addEventListener('click', () => {
-                        if (gamePhase === 'playing' && currentTurn === 0 && currentTrick.length < 4) playCard(0, index);
+                        if (gamePhase === 'playing' && isMyTurn && currentTrick.length < 4) playCard(mySeatIndex !== -1 ? mySeatIndex : 0, index);
                     });
                 }
                 handContainer.appendChild(cardEl);
@@ -1729,7 +1781,8 @@
         }
 
         function playCard(playerIndex, cardIndex, forceDeclareBelote = null) {
-            const playedCard = trainingHands[playerIndex][cardIndex];
+            const targetHand = isTrainingMode ? trainingHands[playerIndex] : myHandCards;
+            const playedCard = targetHand[cardIndex];
             let isBeloteSituation = false;
 
             if (!currentContract.includes('Под коньете')) {
@@ -1744,39 +1797,41 @@
                     const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
                     if (isTrumpCard) {
                         const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
-                        if (trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit)) isBeloteSituation = true;
+                        if (targetHand.some(c => c.val === otherVal && c.suit === playedCard.suit)) isBeloteSituation = true;
                     }
                 }
             }
 
-            if (isBeloteSituation && playerIndex === 0 && forceDeclareBelote === null) {
+            if (isBeloteSituation && playerIndex === (mySeatIndex !== -1 ? mySeatIndex : 0) && forceDeclareBelote === null) {
                 showBeloteModal(cardIndex);
                 return;
             }
 
-            let declareBelote = isBeloteSituation ? ((playerIndex === 0) ? (forceDeclareBelote === true) : true) : false;
+            let declareBelote = isBeloteSituation ? ((playerIndex === (mySeatIndex !== -1 ? mySeatIndex : 0)) ? (forceDeclareBelote === true) : true) : false;
 
             if (declareBelote) {
                 if (playerIndex % 2 === 0) belotePointsRound.us += 20;
                 else belotePointsRound.them += 20;
 
+                const relIndex = isTrainingMode ? playerIndex : (playerIndex - mySeatIndex + 4) % 4;
                 const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
-                const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
-                let prevText = bubble.style.opacity === '1' ? bubble.textContent + ', ' : '';
-                bubble.textContent = prevText + 'Белот';
-                bubble.style.opacity = '1';
-
-                if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
-                bubble.hideTimeout = setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 2000);
+                const bubble = document.getElementById(`bubble-${posMap[relIndex]}`);
+                if (bubble) {
+                    let prevText = bubble.style.opacity === '1' ? bubble.textContent + ', ' : '';
+                    bubble.textContent = prevText + 'Белот';
+                    bubble.style.opacity = '1';
+                    if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+                    bubble.hideTimeout = setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 2000);
+                }
             }
 
-            if (isFirstTrick && playerIndex !== 0) processAiDeclarations(playerIndex);
+            if (isFirstTrick && playerIndex !== 0 && isTrainingMode) processAiDeclarations(playerIndex);
 
-            trainingHands[playerIndex].splice(cardIndex, 1);
+            targetHand.splice(cardIndex, 1);
             currentTrick.push({ player: playerIndex, card: playedCard });
             
             renderTrickArea();
-            if (playerIndex === 0) renderPlayerHand();
+            renderPlayerHand();
 
             if (currentTrick.length === 4) {
                 currentTurn = -1;
@@ -1805,9 +1860,10 @@
             currentTrick.forEach((play, index) => {
                 const cardEl = document.createElement('div');
                 const isLastCard = index === currentTrick.length - 1;
-                const animClass = isLastCard ? `anim-throw-${play.player}` : '';
+                const relIndex = isTrainingMode ? play.player : (play.player - mySeatIndex + 4) % 4;
+                const animClass = isLastCard ? `anim-throw-${relIndex}` : '';
                 
-                cardEl.className = `card trick-card ${play.card.color} trick-p${play.player} ${animClass}`;
+                cardEl.className = `card trick-card ${play.card.color} trick-p${relIndex} ${animClass}`;
                 cardEl.innerHTML = `<div class="text-[0.8em] font-bold absolute top-1 left-1.5 leading-none">${play.card.val}</div>
                                     <div class="text-3xl md:text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">${play.card.suit}</div>
                                     <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${play.card.val}</div>`;
@@ -1869,13 +1925,15 @@
             if (winnerTeam === 0) { roundScore.us += trickPoints; tricksWon.us++; }
             else { roundScore.them += trickPoints; tricksWon.them++; }
 
-            const isLastTrick = trainingHands[0].length === 0 && trainingHands[1].length === 0;
+            const targetHand = isTrainingMode ? trainingHands[0] : myHandCards;
+            const isLastTrick = targetHand.length === 0;
             if (isLastTrick) {
                 if (winnerTeam === 0) roundScore.us += 10; else roundScore.them += 10;
             }
 
+            const relIndex = isTrainingMode ? winnerIndex : (winnerIndex - mySeatIndex + 4) % 4;
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
-            const winnerPos = posMap[winnerIndex];
+            const winnerPos = posMap[relIndex];
 
             const trickCards = document.querySelectorAll('.trick-card');
             trickCards.forEach(cardEl => {
@@ -2014,12 +2072,12 @@
                 let winnerText = globalScore.us >= 151 ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
                 showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
-                    startTrainingGame();
+                    if (isTrainingMode) startTrainingGame();
                 });
             } else {
                 showModal("Край на рунда", summaryHtml, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
-                    startTrainingGame();
+                    if (isTrainingMode) startTrainingGame();
                 });
             }
         }
