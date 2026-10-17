@@ -11,7 +11,9 @@
             color: white;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
-            touch-action: none;
+            touch-action: manipulation;
+            height: 100dvh;
+            width: 100vw;
         }
         
         .poker-table {
@@ -20,19 +22,17 @@
             border-radius: 9999px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
             position: relative;
-            width: calc(100% - 120px);
-            height: calc(100% - 160px);
-            max-width: 800px;
-            max-height: 550px;
+            width: min(85vw, 800px);
+            height: min(50vh, 550px);
             margin: auto;
         }
 
         .seat {
             position: absolute;
-            width: 100px;
+            width: 90px;
             text-align: center;
-            background: rgba(0,0,0,0.6);
-            padding: 8px;
+            background: rgba(0,0,0,0.7);
+            padding: 6px;
             border-radius: 8px;
             border: 1px solid #4a5568;
             transform: translate(-50%, -50%);
@@ -41,33 +41,34 @@
         }
 
         /* Seat positions relative to table center */
-        .seat-bottom { bottom: -20px; left: 50%; transform: translate(-50%, 0); }
-        .seat-top { top: -20px; left: 50%; transform: translate(-50%, -100%); }
-        .seat-left { top: 50%; left: -20px; transform: translate(-100%, -50%); }
-        .seat-right { top: 50%; right: -20px; transform: translate(100%, -50%); }
+        .seat-bottom { bottom: -25px; left: 50%; transform: translate(-50%, 0); }
+        .seat-top { top: -25px; left: 50%; transform: translate(-50%, -100%); }
+        .seat-left { top: 50%; left: -25px; transform: translate(-100%, -50%); }
+        .seat-right { top: 50%; right: -25px; transform: translate(100%, -50%); }
 
         .card {
-            width: 70px;
-            height: 105px;
+            width: min(15vw, 68px);
+            height: min(22.5vw, 102px);
             background: #ffffff;
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 28px;
+            font-size: min(5vw, 24px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
             border: 2px solid #e2e8f0;
-            margin: 0 -10px;
+            margin: 0 -8px;
             transition: transform 0.2s, top 0.2s;
             cursor: pointer;
             user-select: none;
             line-height: 1.1;
+            flex-shrink: 0;
         }
         
-        .card.playable:hover {
-            transform: translateY(-20px) !important;
+        .card.playable:hover, .card.playable:active {
+            transform: translateY(-18px) !important;
             border-color: #48bb78;
             border-width: 3px;
         }
@@ -83,12 +84,12 @@
 
         .hand-container {
             position: absolute;
-            bottom: 40px;
+            bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            padding: 10px;
-            z-index: 20;
+            padding: 5px;
+            z-index: 30;
             width: 100%;
             max-width: 100vw;
             justify-content: center;
@@ -108,8 +109,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 260px;
-            height: 260px;
+            width: 220px;
+            height: 220px;
         }
         
         .trick-card {
@@ -120,10 +121,10 @@
         }
         
         /* Positioning played cards based on player index */
-        .trick-p0 { bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 4; }
-        .trick-p1 { right: 20px; top: 50%; transform: translateY(-50%) rotate(-90deg); z-index: 1; }
-        .trick-p2 { top: 20px; left: 50%; transform: translateX(-50%); z-index: 2; }
-        .trick-p3 { left: 20px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 3; }
+        .trick-p0 { bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 4; }
+        .trick-p1 { right: 10px; top: 50%; transform: translateY(-50%) rotate(-90deg); z-index: 1; }
+        .trick-p2 { top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; }
+        .trick-p3 { left: 10px; top: 50%; transform: translateY(-50%) rotate(90deg); z-index: 3; }
 
         /* Speech Bubbles for Bids */
         .speech-bubble {
@@ -132,7 +133,7 @@
             color: black;
             border-radius: 8px;
             padding: 4px 8px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             z-index: 40;
             opacity: 0;
@@ -162,20 +163,21 @@
         /* Bidding Panel */
         #bidding-panel {
             position: absolute;
-            bottom: 160px;
+            bottom: 120px;
             top: auto;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(30, 41, 59, 0.95);
-            padding: 20px;
+            padding: 12px;
             border-radius: 12px;
             border: 2px solid #48bb78;
-            z-index: 30;
+            z-index: 40;
             display: none;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 6px;
             justify-content: center;
-            width: 320px;
+            width: 90vw;
+            max-width: 340px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.8);
         }
 
@@ -183,10 +185,11 @@
             background: #2d3748;
             color: white;
             border: 1px solid #4a5568;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 13px;
             transition: all 0.2s;
         }
         .bid-btn:hover:not(:disabled) { background: #4a5568; border-color: #a0aec0; }
@@ -222,14 +225,14 @@
         /* Dealer Badge */
         .dealer-badge {
             position: absolute;
-            top: -12px;
-            right: -12px;
+            top: -10px;
+            right: -10px;
             background: #ed8936;
             color: white;
             border-radius: 50%;
-            width: 26px;
-            height: 26px;
-            font-size: 14px;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
             font-weight: 900;
             display: flex;
             align-items: center;
@@ -245,11 +248,11 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 70px;
-            height: 105px;
+            width: 50px;
+            height: 75px;
             background: #2b6cb0;
             border: 2px solid #fff;
-            border-radius: 8px;
+            border-radius: 6px;
             transform: translate(-50%, -50%);
             transition: all 0.4s ease-out;
             z-index: 50;
@@ -257,19 +260,19 @@
 
         /* Animations for playing cards */
         @keyframes throwCard0 { 
-            from { transform: translate(-50%, 250px) scale(0.3); opacity: 0; } 
+            from { transform: translate(-50%, 150px) scale(0.3); opacity: 0; } 
             to { transform: translateX(-50%) scale(1); opacity: 1; } 
         }
         @keyframes throwCard1 { 
-            from { transform: translate(250px, -50%) scale(0.3); opacity: 0; } 
+            from { transform: translate(150px, -50%) scale(0.3); opacity: 0; } 
             to { transform: translateY(-50%) rotate(-90deg) scale(1); opacity: 1; } 
         }
         @keyframes throwCard2 { 
-            from { transform: translate(-50%, -250px) scale(0.3); opacity: 0; } 
+            from { transform: translate(-50%, -150px) scale(0.3); opacity: 0; } 
             to { transform: translateX(-50%) scale(1); opacity: 1; } 
         }
         @keyframes throwCard3 { 
-            from { transform: translate(-250px, -50%) scale(0.3); opacity: 0; } 
+            from { transform: translate(-150px, -50%) scale(0.3); opacity: 0; } 
             to { transform: translateY(-50%) rotate(90deg) scale(1); opacity: 1; } 
         }
 
@@ -280,58 +283,51 @@
 
         #custom-modal { display: none; }
 
-        @media (max-width: 768px), (max-height: 700px) {
+        /* Specific Mobile Portrait Tweaks */
+        @media (max-width: 640px) {
             .poker-table {
+                width: 88vw;
+                height: 52vh;
                 border-width: 6px;
-                width: calc(100% - 20px);
-                height: calc(100% - 180px);
-                margin-top: 10px;
+                margin-top: auto;
+                margin-bottom: auto;
             }
             .seat {
-                width: 60px;
-                padding: 4px;
-                font-size: 11px;
+                width: 62px;
+                padding: 3px;
+                font-size: 10px;
             }
-            .seat-bottom { bottom: -12px; }
-            .seat-top { top: -12px; }
-            .seat-left { left: -5px; }
-            .seat-right { right: -5px; }
+            .seat-bottom { bottom: -15px; }
+            .seat-top { top: -15px; }
+            .seat-left { left: -10px; }
+            .seat-right { right: -10px; }
 
             .card {
-                width: 58px;
-                height: 88px;
-                font-size: 20px;
-                margin: 0 -4px;
-                border-width: 1.5px;
-                border-radius: 6px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+                width: 52px;
+                height: 78px;
+                font-size: 18px;
+                margin: 0 -8px;
+                border-radius: 5px;
             }
-            .card.playable:active,
-            .card.playable:hover {
-                transform: translateY(-35px) scale(1.1) !important;
-                border-width: 2.5px;
-                box-shadow: 0 8px 16px rgba(0,0,0,0.6);
-                z-index: 100 !important;
-            }
-            
-            #trick-area {
-                transform: translate(-50%, -50%) scale(0.65);
-            }
-            
+
             .hand-container {
-                bottom: 10px;
-                width: 100%;
-                justify-content: center;
-                padding: 5px 0;
+                bottom: 8px;
             }
-            
+
+            #trick-area {
+                width: 160px;
+                height: 160px;
+            }
+
+            .speech-bubble {
+                font-size: 10px;
+                padding: 2px 4px;
+            }
+
             #bidding-panel {
-                width: 95%;
-                max-width: 320px;
-                padding: 10px;
-                bottom: 80px;
-                gap: 6px;
+                bottom: 95px;
             }
+
             .bid-btn {
                 padding: 6px 8px;
                 font-size: 12px;
@@ -343,10 +339,6 @@
                 font-size: 10px;
                 top: -6px;
                 right: -6px;
-            }
-            .speech-bubble {
-                font-size: 11px;
-                padding: 3px 5px;
             }
             
             #scoreboard {
@@ -370,7 +362,7 @@
         }
     </style>
 </head>
-<body class="h-screen w-screen flex items-center justify-center relative">
+<body class="h-screen w-screen flex items-center justify-center relative bg-gray-900 text-white">
 
     <!-- Lobby View -->
     <div id="lobby-view" class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
@@ -534,7 +526,7 @@
         </div>
     </div>
 
-    <!-- Custom Message Modal -->
+    <!-- Modals -->
     <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
         <div class="bg-gray-800 border-2 border-green-500 rounded-xl p-6 max-w-md w-full text-center shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 id="modal-title" class="text-2xl font-bold text-white mb-3">Съобщение</h2>
@@ -545,7 +537,6 @@
         </div>
     </div>
 
-    <!-- Declarations Modal -->
     <div id="declarations-modal" class="fixed inset-0 bg-black bg-opacity-75 z-[60] hidden items-center justify-center">
         <div class="bg-gray-800 border-2 border-blue-500 rounded-xl p-6 max-w-sm w-full text-center shadow-[0_0_20px_rgba(66,153,225,0.6)]">
             <h2 class="text-xl font-bold text-white mb-4">Намерени Анонси (Викане)</h2>
@@ -558,7 +549,6 @@
         </div>
     </div>
 
-    <!-- Belote Modal -->
     <div id="belote-modal" class="fixed inset-0 bg-black bg-opacity-75 z-[70] hidden items-center justify-center">
         <div class="bg-gray-800 border-2 border-yellow-500 rounded-xl p-6 max-w-sm w-full text-center shadow-[0_0_20px_rgba(236,201,75,0.6)]">
             <h2 class="text-2xl font-bold text-white mb-4">Обявяване на Белот?</h2>
@@ -609,20 +599,17 @@
         let consecutivePasses = 0;
         let dealerIndex = 0;
         
-        // Multiplier state (Kontra / Rekontra)
-        let gameMultiplier = 1; // 1 = Normal, 2 = Kontra, 4 = Rekontra
+        let gameMultiplier = 1;
         let kontraBidderIndex = -1;
         
         let isFirstTrick = true;
         let hasShownDeclarations = false;
         
-        // Declarations tracking
         let allDeclaredItems = []; 
         let belotePointsRound = { us: 0, them: 0 };
         let myPendingDeclarations = [];
         let pendingBeloteCardIndex = -1;
 
-        // Match & Score State
         let globalScore = { us: 0, them: 0 };
         let roundScore = { us: 0, them: 0 };
         let tricksWon = { us: 0, them: 0 };
@@ -1907,16 +1894,13 @@
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
-            // Изграждане на подробно съобщение за резултата
             let declInfoHtml = `<div class="bg-gray-900 p-3 rounded border border-gray-700 my-3 text-xs md:text-sm space-y-1">`;
             declInfoHtml += `<div class="font-bold text-yellow-400 border-b border-gray-700 pb-1 mb-2">АНОНСИ И ВИКАНИЯ В ВРЪТКАТА:</div>`;
 
-            // Подготовка за изписване на анонсите за НИЕ
             let usDeclList = declResult.usDecls.map(d => `${d.name} (${d.points}т.)`).join(', ');
             if (belotePointsRound.us > 0) usDeclList += (usDeclList ? ', ' : '') + `Белот (${belotePointsRound.us}т.)`;
             if (!usDeclList) usDeclList = 'Няма';
 
-            // Подготовка за изписване на анонсите за ВИЕ
             let themDeclList = declResult.themDecls.map(d => `${d.name} (${d.points}т.)`).join(', ');
             if (belotePointsRound.them > 0) themDeclList += (themDeclList ? ', ' : '') + `Белот (${belotePointsRound.them}т.)`;
             if (!themDeclList) themDeclList = 'Няма';
