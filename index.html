@@ -699,7 +699,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
         const fbConfig = {
@@ -1144,27 +1144,35 @@
             document.getElementById('btn-start-multiplayer').disabled = (mySeatIndex === -1);
         }
 
+        // РЕШЕНИЕ ЗА RACECONDITION: Използване на runTransaction за избор на място
         async function selectSeat(targetSeatIndex) {
             if (!currentRoomCode || !currentUser) return;
             const name = playerNameInput.value.trim() || 'Играч';
             const roomRef = getRoomPath(currentRoomCode);
 
             try {
-                const docSnap = await getDoc(roomRef);
-                if (!docSnap.exists()) return;
+                await runTransaction(db, async (transaction) => {
+                    const roomDoc = await transaction.get(roomRef);
+                    if (!roomDoc.exists()) throw "Стаята не съществува!";
 
-                const seats = docSnap.data().seats || [null, null, null, null];
-                const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
-                if (existingIndex !== -1) seats[existingIndex] = null;
+                    let seats = roomDoc.data().seats || [null, null, null, null];
 
-                if (!seats[targetSeatIndex]) {
-                    seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
-                    await updateDoc(roomRef, { seats: seats });
-                } else {
-                    showError("Мястото вече бе заето от друг!");
-                }
+                    // 1. Премахваме играча от старото му място (ако се мести)
+                    const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
+                    if (existingIndex !== -1) {
+                        seats[existingIndex] = null;
+                    }
+
+                    // 2. Проверяваме дали мястото е все още свободно
+                    if (seats[targetSeatIndex] === null) {
+                        seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
+                        transaction.update(roomRef, { seats: seats });
+                    } else {
+                        throw "Мястото току-що бе заето от друг играч!";
+                    }
+                });
             } catch (err) {
-                showError("Грешка при избор на място: " + err.message);
+                showError(typeof err === 'string' ? err : "Грешка при избор на място: " + err.message);
             }
         }
 
@@ -1227,14 +1235,16 @@
             if (codeToLeave && currentUser) {
                 try {
                     const roomRef = getRoomPath(codeToLeave);
-                    const snap = await getDoc(roomRef);
-                    if (snap.exists()) {
-                        const seats = snap.data().seats;
-                        if (seatToLeave !== -1 && seats[seatToLeave] && seats[seatToLeave].uid === currentUser.uid) {
-                            seats[seatToLeave] = null;
-                            await updateDoc(roomRef, { seats: seats });
+                    await runTransaction(db, async (transaction) => {
+                        const snap = await transaction.get(roomRef);
+                        if (snap.exists()) {
+                            let seats = snap.data().seats;
+                            if (seatToLeave !== -1 && seats[seatToLeave] && seats[seatToLeave].uid === currentUser.uid) {
+                                seats[seatToLeave] = null;
+                                transaction.update(roomRef, { seats: seats });
+                            }
                         }
-                    }
+                    });
                 } catch(e) { console.error(e); }
             }
 
@@ -1244,6 +1254,13 @@
             seatSelectView.style.display = 'none';
             gameView.style.display = 'none';
         }
+
+        // Автоматично излизане при затваряне/презареждане на таба
+        window.addEventListener('beforeunload', () => {
+            if (currentRoomCode && mySeatIndex !== -1 && currentUser) {
+                leaveRoomAndReset();
+            }
+        });
 
         /* ------------------------------------------------------------------ */
         /* MULTIPLAYER SYNC & REALTIME DATABASE ACTIONS                       */
