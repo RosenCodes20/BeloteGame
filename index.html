@@ -658,7 +658,7 @@
         function detectDeclarations(hand) {
             let decls = [];
             
-            // Check Carres (4 of a kind)
+            // Check Carres (4 of a kind: J, 9, A, K, Q, 10)
             const valCounts = {};
             hand.forEach(c => { valCounts[c.val] = (valCounts[c.val] || 0) + 1; });
             
@@ -676,7 +676,7 @@
                 }
             });
 
-            // Check Sequences (Tierce, Quarte, Quint)
+            // Check Sequences (Tierce = 3, Quarte = 4, Quint = 5+)
             suits.forEach(s => {
                 const suitCards = hand.filter(c => c.suit === s).map(c => c.val);
                 let currentSeq = [];
