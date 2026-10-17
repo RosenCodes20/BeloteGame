@@ -514,15 +514,15 @@
 
                 <!-- Bidding Panel -->
                 <div id="bidding-panel">
-                    <button class="bid-btn" data-bid="♣">♣ Спатия</button>
-                    <button class="bid-btn suit-red" data-bid="♦">♦ Каро</button>
+                    <button class="bid-btn" data-bid="♣">♣ Скапия</button>
+                    <button class="bid-btn suit-red" data-bid="♦">♦ Кало</button>
                     <button class="bid-btn suit-red" data-bid="♥">♥ Купа</button>
-                    <button class="bid-btn" data-bid="♠">♠ Пика</button>
-                    <button class="bid-btn w-full" data-bid="Без коз">Без коз</button>
+                    <button class="bid-btn" data-bid="♠">♠ Пипа</button>
+                    <button class="bid-btn w-full" data-bid="Под коньете">Под коньете</button>
                     <button class="bid-btn w-full" data-bid="На коньете">На коньете</button>
                     <button class="bid-btn kontra w-full" data-bid="Контра" id="btn-kontra">КОНТРА (x2)</button>
                     <button class="bid-btn rekontra w-full" data-bid="Реконтра" id="btn-rekontra">РЕКОНТРА (x4)</button>
-                    <button class="bid-btn pass w-full" data-bid="Пас">Пас</button>
+                    <button class="bid-btn pass w-full" data-bid="Пазас">Пазас</button>
                 </div>
 
                 <!-- Hand Container -->
@@ -635,7 +635,7 @@
 
         const seqOrder = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         const carreRankMap = { 'J': 6, '9': 5, 'A': 4, 'K': 3, 'Q': 2, '10': 1 };
-        const bidHierarchy = { '♣': 1, '♦': 2, '♥': 3, '♠': 4, 'Без коз': 5, 'На коньете': 6 };
+        const bidHierarchy = { '♣': 1, '♦': 2, '♥': 3, '♠': 4, 'Под коньете': 5, 'На коньете': 6 };
 
         const suits = ['♠', '♥', '♦', '♣'];
         const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -1175,7 +1175,7 @@
             const currentBidVal = currentContractRaw ? (bidHierarchy[currentContractRaw] || 0) : 0;
             const possibleBids = Object.keys(bidHierarchy).filter(b => bidHierarchy[b] > currentBidVal);
             
-            let bid = "Пас";
+            let bid = "Пазас";
 
             const isOpponentContract = currentContract !== null && (lastBidderIndex % 2 !== currentTurn % 2);
             const isOwnKontraContract = gameMultiplier === 2 && (kontraBidderIndex % 2 !== currentTurn % 2);
@@ -1198,10 +1198,10 @@
             const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
             
             let displayBid = bid;
-            if (bid === '♣') displayBid = '♣ Спатия';
-            else if (bid === '♦') displayBid = '♦ Каро';
+            if (bid === '♣') displayBid = '♣ Скапия';
+            else if (bid === '♦') displayBid = '♦ Кало';
             else if (bid === '♥') displayBid = '♥ Купа';
-            else if (bid === '♠') displayBid = '♠ Пика';
+            else if (bid === '♠') displayBid = '♠ Пипа';
             
             bubble.textContent = displayBid;
             bubble.style.opacity = '1';
@@ -1212,7 +1212,7 @@
             logBar.classList.remove('hidden');
             logText.textContent = `${playerNames[playerIndex]}: ${displayBid}`;
             
-            if (bid === 'Пас') {
+            if (bid === 'Пазас') {
                 consecutivePasses++;
             } else if (bid === 'Контра') {
                 gameMultiplier = 2;
@@ -1236,7 +1236,7 @@
                     document.querySelectorAll('.speech-bubble').forEach(b => b.style.opacity = '0');
 
                     if (currentContract === null) {
-                        waitingMsg.textContent = "Всички казаха Пас. Ново раздаване...";
+                        waitingMsg.textContent = "Всички казаха Пазас. Ново раздаване...";
                         setTimeout(() => {
                             if (!isTrainingMode) return;
                             dealerIndex = (dealerIndex + 1) % 4;
@@ -1293,7 +1293,7 @@
             } else {
                 if (isFirstTrick && !hasShownDeclarations) {
                     hasShownDeclarations = true;
-                    if (currentContract !== 'Без коз') {
+                    if (currentContract !== 'Под коньете') {
                         const decls = detectDeclarations(trainingHands[0]);
                         if (decls.length > 0) {
                             showDeclarationsModal(decls);
@@ -1313,140 +1313,9 @@
                 }
             }
         }
-
-        function getSeqDeclaration(seq, suit) {
-            const topVal = seq[seq.length - 1].val;
-            const topValIdx = seqOrder.indexOf(topVal);
-            const suitName = suit ? ` (${suit})` : '';
-            if (seq.length === 3) return { type: 'Терца', name: `Терца до ${topVal}${suitName}`, points: 20, length: 3, topValIndex: topValIdx, suit: suit, isCarre: false };
-            if (seq.length === 4) return { type: 'Кварта', name: `Кварта до ${topVal}${suitName}`, points: 50, length: 4, topValIndex: topValIdx, suit: suit, isCarre: false };
-            return { type: 'Квинта', name: `Квинта до ${topVal}${suitName}`, points: 100, length: 5, topValIndex: topValIdx, suit: suit, isCarre: false };
-        }
-
-        function detectDeclarations(hand) {
-            let declarations = [];
-
-            const valueCounts = {};
-            hand.forEach(c => valueCounts[c.val] = (valueCounts[c.val] || 0) + 1);
-            for (const [val, count] of Object.entries(valueCounts)) {
-                if (count === 4) {
-                    if (val === 'J') declarations.push({ type: 'Каре', name: 'Каре Валета', points: 200, isCarre: true, carreRank: 6, suit: '' });
-                    else if (val === '9') declarations.push({ type: 'Каре', name: 'Каре Девятки', points: 150, isCarre: true, carreRank: 5, suit: '' });
-                    else if (['10', 'Q', 'K', 'A'].includes(val)) declarations.push({ type: 'Каре', name: `Каре ${val}`, points: 100, isCarre: true, carreRank: carreRankMap[val], suit: '' });
-                }
-            }
-
-            const suitsGroup = { '♠': [], '♥': [], '♦': [], '♣': [] };
-            hand.forEach(c => suitsGroup[c.suit].push(c));
-
-            for (const suit in suitsGroup) {
-                const cards = suitsGroup[suit].sort((a, b) => seqOrder.indexOf(a.val) - seqOrder.indexOf(b.val));
-                if (cards.length >= 3) {
-                    let currentSeq = [cards[0]];
-                    for (let i = 1; i < cards.length; i++) {
-                        if (seqOrder.indexOf(cards[i].val) === seqOrder.indexOf(currentSeq[currentSeq.length - 1].val) + 1) {
-                            currentSeq.push(cards[i]);
-                        } else {
-                            if (currentSeq.length >= 3) declarations.push(getSeqDeclaration(currentSeq, suit));
-                            currentSeq = [cards[i]];
-                        }
-                    }
-                    if (currentSeq.length >= 3) declarations.push(getSeqDeclaration(currentSeq, suit));
-                }
-            }
-            return declarations;
-        }
-
-        function showDeclarationsModal(decls) {
-            myPendingDeclarations = decls;
-            const modal = document.getElementById('declarations-modal');
-            const list = document.getElementById('declarations-modal-list');
-            list.innerHTML = '';
-
-            decls.forEach((d, idx) => {
-                const row = document.createElement('label');
-                row.className = 'flex items-center gap-3 text-base cursor-pointer hover:bg-gray-700 p-2 rounded transition';
-                row.innerHTML = `
-                    <input type="checkbox" id="modal-decl-${idx}" checked class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 bg-gray-700 border-gray-600">
-                    <span class="font-bold text-white">${d.name} <span class="text-blue-300">(${d.points} т.)</span></span>
-                `;
-                list.appendChild(row);
-            });
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        document.getElementById('btn-declare-yes').addEventListener('click', () => {
-            let names = [];
-            myPendingDeclarations.forEach((d, idx) => {
-                const cb = document.getElementById(`modal-decl-${idx}`);
-                if (cb && cb.checked) {
-                    allDeclaredItems.push({
-                        playerIndex: 0,
-                        team: 0,
-                        ...d
-                    });
-                    names.push(d.name);
-                }
-            });
-            
-            if (names.length > 0) {
-                const bubble = document.getElementById(`bubble-bottom`);
-                bubble.textContent = names.join(', ');
-                bubble.style.opacity = '1';
-                
-                const logBar = document.getElementById('game-log-bar');
-                const logText = document.getElementById('log-text');
-                logBar.classList.remove('hidden');
-                logText.textContent = `Вие анонсирахте: ${names.join(', ')}`;
-                
-                setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 6000);
-            }
-            closeDeclarationsModal();
-        });
-
-        document.getElementById('btn-declare-no').addEventListener('click', () => {
-            closeDeclarationsModal();
-        });
-
-        function closeDeclarationsModal() {
-            const modal = document.getElementById('declarations-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            myPendingDeclarations = [];
-            renderPlayerHand();
-        }
-
-        function showBeloteModal(cardIndex) {
-            pendingBeloteCardIndex = cardIndex;
-            const modal = document.getElementById('belote-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        document.getElementById('btn-belote-yes').addEventListener('click', () => {
-            document.getElementById('belote-modal').classList.add('hidden');
-            document.getElementById('belote-modal').classList.remove('flex');
-            if (pendingBeloteCardIndex !== -1) {
-                let idx = pendingBeloteCardIndex;
-                pendingBeloteCardIndex = -1;
-                playCard(0, idx, true);
-            }
-        });
-
-        document.getElementById('btn-belote-no').addEventListener('click', () => {
-            document.getElementById('belote-modal').classList.add('hidden');
-            document.getElementById('belote-modal').classList.remove('flex');
-            if (pendingBeloteCardIndex !== -1) {
-                let idx = pendingBeloteCardIndex;
-                pendingBeloteCardIndex = -1;
-                playCard(0, idx, false);
-            }
-        });
-
+<!-- ... existing code ...prevent ... -->
         function processAiDeclarations(playerIndex) {
-            if (currentContract === 'Без коз') return;
+            if (currentContract === 'Под коньете') return;
             const decls = detectDeclarations(trainingHands[playerIndex]);
             if (decls.length > 0) {
                 let names = [];
@@ -1480,7 +1349,7 @@
             
             const ledSuit = trick[0].card.suit;
             const isAllTrumps = contract === 'На коньете';
-            const isNoTrumps = contract === 'Без коз';
+            const isNoTrumps = contract === 'Под коньете';
             const trumpSuit = (!isAllTrumps && !isNoTrumps) ? contract.charAt(0) : null;
             
             const hasLedSuit = hand.some(c => c.suit === ledSuit);
@@ -1608,7 +1477,7 @@
             const playedCard = trainingHands[playerIndex][cardIndex];
             let isBeloteSituation = false;
 
-            if (currentContract !== 'Без коз') {
+            if (currentContract !== 'Под коньете') {
                 const isAllTrumps = currentContract === 'На коньете';
                 const trumpSuit = (!isAllTrumps) ? currentContract.charAt(0) : null;
                 
@@ -1693,7 +1562,7 @@
 
         function getCardPoints(card, contractStr) {
             const isAllTrumps = contractStr === 'На коньете';
-            const isNoTrumps = contractStr === 'Без коз';
+            const isNoTrumps = contractStr === 'Под коньете';
             const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(0) : null;
             
             const isTrumpHierarchy = isAllTrumps || (card.suit === contractSuit);
@@ -1707,7 +1576,7 @@
 
         function getCardPower(card, ledSuit, contractStr) {
             const isAllTrumps = contractStr === 'На коньете';
-            const isNoTrumps = contractStr === 'Без коз';
+            const isNoTrumps = contractStr === 'Под коньете';
             const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(0) : null;
             
             const isTrumpSuit = (!isAllTrumps && !isNoTrumps && card.suit === contractSuit);
@@ -1796,7 +1665,7 @@
 
         function getDeclPower(d) {
             const isAllTrumps = currentContract === 'На коньете';
-            const trumpSuit = (!isAllTrumps && currentContract !== 'Без коз') ? currentContract.charAt(0) : null;
+            const trumpSuit = (!isAllTrumps && currentContract !== 'Под коньете') ? currentContract.charAt(0) : null;
             const isTrump = d.suit === trumpSuit;
 
             if (d.isCarre) {
@@ -1855,7 +1724,7 @@
             if (tricksWon.us === 8) usCardPoints += 90;
             if (tricksWon.them === 8) themCardPoints += 90;
 
-            if (currentContract === 'Без коз') {
+            if (currentContract === 'Под коньете') {
                 usCardPoints = (roundScore.us * 2) + (tricksWon.us === 8 ? 90 : 0);
                 themCardPoints = (roundScore.them * 2) + (tricksWon.them === 8 ? 90 : 0);
             }
