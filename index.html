@@ -312,38 +312,54 @@
             body {
                 padding: 0;
                 overflow: hidden;
-                /* Предотвратява случайното презареждане на страницата при плъзгане надолу */
+                /* Спира pull-to-refresh на мобилни устройства */
                 overscroll-behavior-y: none; 
             }
 
-            /* Правим масата по-издължена и я повдигаме леко нагоре, за да има място за ръката */
+            /* 1. Масата става по-елипсовидна и се центрира по-добре */
             .poker-table {
-                width: 95vw;
-                height: 52vh;
+                width: 94vw;
+                height: 48vh; /* По-продълговата форма, за да остави място отгоре и отдолу */
                 border-width: 6px;
-                margin-top: -8vh; 
+                margin-top: 6vh; /* Леко избутване надолу, за да не се блъска в Top Bar-а */
             }
 
-            /* Оптимизирани места на играчите - по-прибрани и с по-четлив шрифт */
+            /* 2. КРИТИЧНО: Фиксираме картите на самото дъно на екрана, а не на дъното на масата! */
+            .hand-container {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+                z-index: 100 !important;
+                width: 100vw;
+            }
+
+            /* 3. Оправяме разположението на имената, така че да са винаги видими */
             .seat {
-                min-width: 65px;
+                min-width: 60px;
                 padding: 4px 8px;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 700;
                 border-radius: 12px;
             }
+            
+            /* Бутаме горния играч леко навътре, за да не влиза в табелката "Стая" */
+            .seat-top { top: 0px; left: 50%; transform: translate(-50%, -50%); z-index: 25; }
+            
+            /* Долният играч (Ти) е видим над картите */
+            .seat-bottom { bottom: -10px; left: 50%; transform: translate(-50%, 50%); z-index: 50; }
+            
+            /* Страничните играчи ги вадим леко навън */
+            .seat-left { top: 50%; left: -5px; transform: translate(-50%, -50%); z-index: 25; }
+            .seat-right { top: 50%; right: -5px; transform: translate(50%, -50%); z-index: 25; }
 
-            .seat-top { top: -5px; left: 50%; transform: translate(-50%, 0); z-index: 25; }
-            .seat-bottom { bottom: -15px; left: 50%; transform: translate(-50%, 0); z-index: 50; }
-            .seat-left { top: 45%; left: -10px; transform: translate(0, -50%); z-index: 25; }
-            .seat-right { top: 45%; right: -10px; transform: translate(0, -50%); z-index: 25; }
-
-            /* Картите са малко по-големи за по-лесно докосване */
+            /* 4. Размери на картите */
             .card {
-                width: 52px;
-                height: 78px;
-                font-size: 17px;
-                margin: 0 -18px; /* По-голямо застъпване, за да се съберат 8 карти */
+                width: 50px;
+                height: 75px;
+                font-size: 16px;
+                margin: 0 -14px; 
                 border-radius: 6px;
             }
 
@@ -351,85 +367,69 @@
                 transform: translateY(-20px) scale(1.1) !important;
             }
 
-            /* Ръката е залепена плътно долу, съобразявайки се с чертата на iPhone */
-            .hand-container { 
-                bottom: 0; 
-                padding-bottom: env(safe-area-inset-bottom, 12px);
-                z-index: 60;
-            }
-
-            #trick-area { 
-                width: 150px; 
-                height: 150px; 
-            }
-
-            .speech-bubble { 
-                font-size: 11px; 
-                padding: 4px 8px; 
-            }
-
-            /* Панелът за анонси е по-голям и удобен за кликане с палец */
-            #bidding-panel { 
-                bottom: calc(100px + env(safe-area-inset-bottom, 0px)); 
-                gap: 6px; 
-                padding: 12px; 
-                border-radius: 16px; 
-                width: 92vw;
-                max-width: none;
-                background: rgba(15, 23, 42, 0.85); /* Малко по-плътен фон */
-            }
-
-            /* Бутоните за анонс са с по-голяма височина (Touch-friendly) */
-            .bid-btn { 
-                padding: 10px 6px; 
-                font-size: 12px; 
-                border-radius: 10px;
-            }
-
-            .dealer-badge { 
-                width: 20px; 
-                height: 20px; 
-                font-size: 10px; 
-                top: -6px; 
-                right: -6px; 
-            }
-            
-            /* Премахваме 'transform: scale' за да няма размазване и използваме реални размери */
+            /* 5. Горните ленти (Резултат и Стая) - подреждаме ги правилно */
             #scoreboard {
                 top: env(safe-area-inset-top, 10px) !important;
                 left: 10px !important;
                 transform: none !important;
-                padding: 6px 10px !important;
-                gap: 12px !important;
+                padding: 4px 8px !important;
                 z-index: 60;
-                background: rgba(15, 23, 42, 0.75);
+                background: rgba(15, 23, 42, 0.85);
             }
-            #scoreboard .text-2xl { font-size: 1.25rem !important; } /* Смаляваме малко текста на резултата */
+            #scoreboard .text-2xl { font-size: 1.1rem !important; }
 
             #current-game-indicator {
                 top: env(safe-area-inset-top, 10px) !important;
                 right: 10px !important;
                 left: auto !important;
                 transform: none !important;
-                padding: 6px 10px !important;
+                padding: 4px 8px !important;
                 z-index: 60;
             }
 
+            /* Сваляме лентата "Стая / Напусни" ПОД резултата */
             .top-bar-container {
-                margin-top: calc(55px + env(safe-area-inset-top, 0px)) !important;
+                margin-top: calc(52px + env(safe-area-inset-top, 0px)) !important;
             }
 
             #game-log-bar { 
-                top: calc(95px + env(safe-area-inset-top, 0px)) !important; 
-                font-size: 11px !important; 
-                padding: 4px 12px !important;
-                max-width: 90vw;
+                top: calc(105px + env(safe-area-inset-top, 0px)) !important; 
+                font-size: 10px !important; 
+                padding: 2px 10px !important;
             }
 
+            /* 6. Помощни елементи */
+            #trick-area { 
+                width: 130px; 
+                height: 130px; 
+            }
+            .speech-bubble { 
+                font-size: 11px; 
+                padding: 4px 8px; 
+            }
+            #bidding-panel { 
+                bottom: calc(100px + env(safe-area-inset-bottom, 0px)); 
+                gap: 4px; 
+                padding: 10px; 
+                border-radius: 12px; 
+                width: 92vw;
+                max-width: 320px;
+            }
+            .bid-btn { 
+                padding: 8px 6px; 
+                font-size: 11px; 
+            }
+            .dealer-badge { 
+                width: 18px; 
+                height: 18px; 
+                font-size: 9px; 
+                top: -5px; 
+                right: -5px; 
+            }
             #contract-display {
-                top: 58% !important;
-                font-size: 16px !important;
-                background: rgba(0,0,0,0.5);
+                top: 60% !important;
+                font-size: 14px !important;
+                background: rgba(0,0,0,0.6);
                 padding: 4px 12px;
                 border-radius: 99px;
             }
