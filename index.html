@@ -1626,7 +1626,17 @@
                 const isAllTrumps = currentContract === 'На коньете';
                 const trumpSuit = (!isAllTrumps) ? currentContract.charAt(0) : null;
                 
-                if (playedCard.val === 'K' || playedCard.val === 'Q') {
+                // Проверка дали играчът спазва боята, ако се играе "На коньете"
+                let isValidBeloteSuit = true;
+                if (isAllTrumps && currentTrick.length > 0) {
+                    const ledSuit = currentTrick[0].card.suit;
+                    // При "На коньете" Белот може да се обяви САМО ако изиграната карта е от водещата боя за ръката
+                    if (playedCard.suit !== ledSuit) {
+                        isValidBeloteSuit = false;
+                    }
+                }
+
+                if (isValidBeloteSuit && (playedCard.val === 'K' || playedCard.val === 'Q')) {
                     const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
                     
                     if (isTrumpCard) {
