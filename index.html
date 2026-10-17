@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO & Open Graph -->
     <title>Играй Белот Онлайн – Мултиплейър и Безплатна Тренировка</title>
     <meta name="description" content="Играй онлайн белот с приятели или се състезавай срещу умни ботове. Напълно безплатна игра на карти Белот с класически български правила и бързи стаи!">
     <link rel="canonical" href="https://yourusername.github.io/belote/">
@@ -721,9 +723,11 @@
         let unsubscribeSeatSelect = null;
         let mySeatIndex = -1;
         let isTrainingMode = false;
+        let isStartingMultiplayer = false;
 
         // Local State
         let myHandCards = [];
+        let trainingHands = [[], [], [], []];
         let currentTrick = [];
         let currentTurn = 0;
         let aiTimeout = null;
@@ -973,6 +977,7 @@
             lastBidderIndex = -1;
             callerTeam = -1;
             mySeatIndex = -1;
+            isStartingMultiplayer = false;
 
             if (trickArea) trickArea.innerHTML = '';
             document.getElementById('my-hand').innerHTML = '';
@@ -1072,13 +1077,39 @@
             listenToRoomSeatSelection(code);
         }
 
+        /* ------------------------------------------------------------------ */
+        /* MULTIPLAYER AUTOMATIC SEAT & ROOM LISTENERS                        */
+        /* ------------------------------------------------------------------ */
         function listenToRoomSeatSelection(code) {
-            unsubscribeSeatSelect = onSnapshot(getRoomPath(code), (docSnap) => {
+            unsubscribeSeatSelect = onSnapshot(getRoomPath(code), async (docSnap) => {
                 if (!docSnap.exists()) {
                     showModal("Внимание", "Стаята беше затворена.", () => leaveRoomAndReset());
                     return;
                 }
-                renderSeatSelectionView(docSnap.data());
+                const data = docSnap.data();
+                renderSeatSelectionView(data);
+
+                const filledSeats = (data.seats || []).filter(s => s !== null).length;
+
+                // 1. АКО В ИГРАТА ВЛЯЗАТ 4-МА: Host (seat 0) автоматично раздава карти в DB
+                if (filledSeats === 4 && data.status === 'waiting' && mySeatIndex === 0 && !isStartingMultiplayer) {
+                    isStartingMultiplayer = true;
+                    await startMultiplayerGameInDb(code);
+                    isStartingMultiplayer = false;
+                }
+
+                // 2. АКО СТАТУСЪТ Е 'playing', АВТОМАТИЧНО МИНАВАМЕ НА МАСАТА В ИГРАТА
+                if (data.status === 'playing' && mySeatIndex !== -1 && gameView.style.display !== 'flex') {
+                    if (unsubscribeSeatSelect) {
+                        unsubscribeSeatSelect();
+                        unsubscribeSeatSelect = null;
+                    }
+                    seatSelectView.style.display = 'none';
+                    gameView.style.display = 'flex';
+                    document.getElementById('display-room-code').textContent = currentRoomCode;
+                    updateMultiplayerSeatNames(data.seats);
+                    listenToRoom(currentRoomCode);
+                }
             });
         }
 
@@ -1140,11 +1171,6 @@
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1) return;
             
-            if (unsubscribeSeatSelect) {
-                unsubscribeSeatSelect();
-                unsubscribeSeatSelect = null;
-            }
-
             seatSelectView.style.display = 'none';
             gameView.style.display = 'flex';
             document.getElementById('display-room-code').textContent = currentRoomCode;
@@ -1152,10 +1178,16 @@
 
             updateMultiplayerSeatNames(currentRoomSeats);
 
-            // Ако 4-мата са заели местата и лобито е Host, стартираме раздаването
             const filledSeats = currentRoomSeats.filter(s => s !== null).length;
-            if (filledSeats === 4 && mySeatIndex === 0) {
+            if (filledSeats === 4 && mySeatIndex === 0 && !isStartingMultiplayer) {
+                isStartingMultiplayer = true;
                 await startMultiplayerGameInDb(currentRoomCode);
+                isStartingMultiplayer = false;
+            }
+
+            if (unsubscribeSeatSelect) {
+                unsubscribeSeatSelect();
+                unsubscribeSeatSelect = null;
             }
 
             listenToRoom(currentRoomCode);
@@ -1214,9 +1246,10 @@
         }
 
         /* ------------------------------------------------------------------ */
-        /* MULTIPLAYER SYNC & LOGIC                                           */
+        /* MULTIPLAYER SYNC & REALTIME DATABASE ACTIONS                       */
         /* ------------------------------------------------------------------ */
         function listenToRoom(code) {
+            if (unsubscribeRoom) return;
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
                 if (!docSnap.exists()) {
                     showModal("Внимание", "Стаята беше затворена.", () => leaveRoomAndReset());
@@ -1231,7 +1264,7 @@
                     const filledSeats = data.seats.filter(s => s !== null).length;
                     if (filledSeats < 4) {
                         waitingMsg.textContent = `Изчакваме 4 играчи (${filledSeats}/4)...`;
-                    } else {
+                    } else if (data.gamePhase === 'bidding') {
                         waitingMsg.textContent = "";
                     }
 
