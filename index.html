@@ -542,7 +542,7 @@
 
         <div class="flex flex-col gap-3 justify-center">
             <button id="btn-start-multiplayer" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-lg hover:shadow-green-500/30">
-                🚀 Старт на играта
+                🚀 Старт на играта (Свободните са Ботове)
             </button>
             <button id="btn-cancel-seat-select" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all">
                 Отказ
@@ -677,10 +677,31 @@
         </div>
     </div>
 
-    <script>
-        // Глобални променливи за играта
+    <!-- Firebase и Мултиплейър Скрипт -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
+        const fbConfig = {
+            apiKey: "AIzaSyDIUyQGyL5mrBIgkUdAVqX3Bpv_ZhwKsI0",
+            authDomain: "belotegame-aa2f3.firebaseapp.com",
+            projectId: "belotegame-aa2f3",
+            storageBucket: "belotegame-aa2f3.firebasestorage.app",
+            messagingSenderId: "182833866712",
+            appId: "1:182833866712:web:f434a15667735fc3b134ad"
+        };
+
+        const app = initializeApp(fbConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
         let currentRoomCode = null;
-        let mySeatIndex = 0;
+        let unsubscribeRoom = null;
+        let mySeatIndex = -1;
+        let isTrainingMode = false;
 
         let playerHands = [[], [], [], []];
         let currentTrick = [];
@@ -728,6 +749,27 @@
         const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         let deck = [];
 
+        function getRoomPath(code) {
+            return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+        }
+
+        async function initAuth() {
+            try {
+                await signInAnonymously(auth);
+                currentUser = auth.currentUser;
+                const savedName = localStorage.getItem('belote_name');
+                if(savedName) playerNameInput.value = savedName;
+            } catch (error) {
+                console.warn("Автентикацията пропадна:", error);
+            }
+        }
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.remove('hidden');
+            setTimeout(() => errorMsg.classList.add('hidden'), 4000);
+        }
+
         function initDeck() {
             deck = [];
             suits.forEach(suit => {
@@ -748,157 +790,9 @@
             };
         }
 
-        function detectDeclarations(hand) {
-            let decls = [];
-            const valCounts = {};
-            hand.forEach(c => { valCounts[c.val] = (valCounts[c.val] || 0) + 1; });
-            
-            Object.keys(valCounts).forEach(val => {
-                if (valCounts[val] === 4 && val !== '7' && val !== '8') {
-                    let pts = 100;
-                    if (val === 'J') pts = 200;
-                    decls.push({
-                        type: 'carre',
-                        publicName: 'Каре',
-                        name: `Каре (${pts}т.)`,
-                        points: pts,
-                        isCarre: true,
-                        carreRank: carreRankMap[val] || 0
-                    });
-                }
-            });
-
-            suits.forEach(s => {
-                const suitCards = hand.filter(c => c.suit === s).map(c => c.val);
-                let currentSeq = [];
-                
-                seqOrder.forEach((val) => {
-                    if (suitCards.includes(val)) {
-                        currentSeq.push(val);
-                    } else {
-                        if (currentSeq.length >= 3) {
-                            addSeqDeclaration(decls, currentSeq, s);
-                        }
-                        currentSeq = [];
-                    }
-                });
-                if (currentSeq.length >= 3) {
-                    addSeqDeclaration(decls, currentSeq, s);
-                }
-            });
-
-            return decls;
-        }
-
-        function addSeqDeclaration(decls, seq, suit) {
-            let pts = 20;
-            let typeName = 'Терца';
-            if (seq.length === 4) { pts = 50; typeName = 'Педесе'; }
-            else if (seq.length >= 5) { pts = 100; typeName = 'Сто'; }
-
-            const topVal = seq[seq.length - 1];
-            decls.push({
-                type: 'seq',
-                publicName: typeName,
-                name: `${typeName} ${suit} (${pts}т.)`,
-                points: pts,
-                suit: suit,
-                length: seq.length,
-                topValIndex: seqOrder.indexOf(topVal),
-                isCarre: false
-            });
-        }
-
-        function showDeclarationsModal(decls) {
-            const modalEl = document.getElementById('declarations-modal');
-            const listEl = document.getElementById('declarations-modal-list');
-            listEl.innerHTML = '';
-            
-            myPendingDeclarations = decls;
-
-            decls.forEach((d, idx) => {
-                const label = document.createElement('label');
-                label.className = 'flex items-center gap-3 cursor-pointer bg-black/20 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors';
-                label.innerHTML = `
-                    <input type="checkbox" checked data-index="${idx}" class="w-5 h-5 text-blue-500 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2">
-                    <span class="text-white text-sm md:text-base font-semibold">${d.name}</span>
-                `;
-                listEl.appendChild(label);
-            });
-
-            modalEl.classList.remove('hidden');
-            modalEl.classList.add('flex');
-        }
-
-        document.getElementById('btn-declare-yes').addEventListener('click', () => {
-            const modalEl = document.getElementById('declarations-modal');
-            modalEl.classList.add('hidden');
-            modalEl.classList.remove('flex');
-
-            const checkboxes = document.querySelectorAll('#declarations-modal-list input[type="checkbox"]');
-            let selectedPublicNames = [];
-
-            checkboxes.forEach(cb => {
-                if (cb.checked) {
-                    const idx = parseInt(cb.getAttribute('data-index'));
-                    const item = myPendingDeclarations[idx];
-                    allDeclaredItems.push({
-                        playerIndex: 0,
-                        team: 0,
-                        ...item
-                    });
-                    selectedPublicNames.push(item.publicName);
-                }
-            });
-
-            if (selectedPublicNames.length > 0) {
-                showSpeechBubble(0, selectedPublicNames.join(', '));
-            }
-
-            renderPlayerHand();
-        });
-
-        document.getElementById('btn-declare-no').addEventListener('click', () => {
-            const modalEl = document.getElementById('declarations-modal');
-            modalEl.classList.add('hidden');
-            modalEl.classList.remove('flex');
-            renderPlayerHand();
-        });
-
-        function showBeloteModal(cardIndex) {
-            pendingBeloteCardIndex = cardIndex;
-            const beloteModal = document.getElementById('belote-modal');
-            beloteModal.classList.remove('hidden');
-            beloteModal.classList.add('flex');
-        }
-
-        document.getElementById('btn-belote-yes').addEventListener('click', () => {
-            const beloteModal = document.getElementById('belote-modal');
-            beloteModal.classList.add('hidden');
-            beloteModal.classList.remove('flex');
-            if (pendingBeloteCardIndex !== -1) {
-                const idx = pendingBeloteCardIndex;
-                pendingBeloteCardIndex = -1;
-                playCard(0, idx, true);
-            }
-        });
-
-        document.getElementById('btn-belote-no').addEventListener('click', () => {
-            const beloteModal = document.getElementById('belote-modal');
-            beloteModal.classList.add('hidden');
-            beloteModal.classList.remove('flex');
-            if (pendingBeloteCardIndex !== -1) {
-                const idx = pendingBeloteCardIndex;
-                pendingBeloteCardIndex = -1;
-                playCard(0, idx, false);
-            }
-        });
-
         function resetGameState() {
-            if (aiTimeout) {
-                clearTimeout(aiTimeout);
-                aiTimeout = null;
-            }
+            if (aiTimeout) { clearTimeout(aiTimeout); aiTimeout = null; }
+            if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
 
             gamePhase = 'waiting';
             playerHands = [[], [], [], []];
@@ -943,14 +837,163 @@
                 if (seat) seat.classList.add('hidden');
                 
                 const bubble = document.getElementById(`bubble-${pos}`);
-                if (bubble) {
-                    bubble.style.opacity = '0';
-                    bubble.textContent = '';
-                }
+                if (bubble) { bubble.style.opacity = '0'; bubble.textContent = ''; }
 
                 const badge = document.getElementById(`dealer-${pos}`);
                 if (badge) badge.style.display = 'none';
             });
+        }
+
+        // --- МУЛТИПЛЕЪР ЛОГИКА И СТАИ ---
+        document.getElementById('btn-create').addEventListener('click', async () => {
+            const name = playerNameInput.value.trim() || 'Играч';
+            localStorage.setItem('belote_name', name);
+
+            if (!currentUser) await signInAnonymously(auth);
+            currentUser = auth.currentUser;
+
+            const customCodeInput = document.getElementById('room-code-input').value.trim().toUpperCase();
+            const code = customCodeInput.length > 0 ? customCodeInput : Math.random().toString(36).substring(2, 7).toUpperCase();
+
+            const roomRef = getRoomPath(code);
+
+            try {
+                const initialSeats = [
+                    { uid: currentUser.uid, name: name },
+                    null, null, null
+                ];
+                await setDoc(roomRef, {
+                    createdAt: Date.now(),
+                    status: 'waiting',
+                    seats: initialSeats
+                });
+                joinSeatSelectionUI(code);
+            } catch (err) {
+                showError("Грешка при създаване: " + err.message);
+            }
+        });
+
+        document.getElementById('btn-join').addEventListener('click', async () => {
+            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (!code) return showError("Моля въведете код!");
+
+            if (!currentUser) await signInAnonymously(auth);
+            currentUser = auth.currentUser;
+
+            const name = playerNameInput.value.trim() || 'Играч';
+            localStorage.setItem('belote_name', name);
+
+            const roomRef = getRoomPath(code);
+            try {
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) return showError("Стаята не съществува!");
+
+                joinSeatSelectionUI(code);
+            } catch (err) {
+                showError("Грешка при влизане: " + err.message);
+            }
+        });
+
+        function joinSeatSelectionUI(code) {
+            resetGameState();
+            isTrainingMode = false;
+            currentRoomCode = code;
+
+            lobbyView.style.display = 'none';
+            seatSelectView.style.display = 'block';
+            document.getElementById('seat-room-code').textContent = code;
+
+            listenToRoomSeatSelection(code);
+        }
+
+        function listenToRoomSeatSelection(code) {
+            unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
+                if (!docSnap.exists()) return;
+                renderSeatSelectionView(docSnap.data());
+            });
+        }
+
+        function renderSeatSelectionView(room) {
+            const seats = room.seats || [null, null, null, null];
+            mySeatIndex = seats.findIndex(s => s && s.uid === (currentUser ? currentUser.uid : ''));
+
+            [0, 1, 2, 3].forEach(seatIdx => {
+                const seatBtn = document.getElementById(`seat-btn-${seatIdx}`);
+                const seatNameEl = seatBtn.querySelector('.seat-name');
+                const player = seats[seatIdx];
+
+                seatBtn.onclick = null;
+
+                if (player) {
+                    if (currentUser && player.uid === currentUser.uid) {
+                        seatBtn.className = 'seat-card my-seat';
+                        seatNameEl.textContent = `${player.name} (Ти)`;
+                    } else {
+                        seatBtn.className = 'seat-card occupied';
+                        seatNameEl.textContent = player.name;
+                    }
+                } else {
+                    seatBtn.className = 'seat-card';
+                    seatNameEl.textContent = 'Свободно (Кликни)';
+                    seatBtn.onclick = () => selectSeat(seatIdx);
+                }
+            });
+        }
+
+        async function selectSeat(targetSeatIndex) {
+            if (!currentRoomCode || !currentUser) return;
+            const name = playerNameInput.value.trim() || 'Играч';
+            const roomRef = getRoomPath(currentRoomCode);
+
+            try {
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) return;
+
+                const seats = docSnap.data().seats || [null, null, null, null];
+                const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
+                if (existingIndex !== -1) seats[existingIndex] = null;
+
+                if (!seats[targetSeatIndex]) {
+                    seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
+                    await updateDoc(roomRef, { seats: seats });
+                }
+            } catch (err) {
+                showError("Грешка при избор на място: " + err.message);
+            }
+        }
+
+        document.getElementById('btn-start-multiplayer').addEventListener('click', () => {
+            seatSelectView.style.display = 'none';
+            gameView.style.display = 'flex';
+            startFullGame(currentRoomCode || 'ОНЛАЙН', 'Мултиплейър стая');
+        });
+
+        // --- ИГРАЛНА ЛОГИКА ---
+        document.getElementById('btn-training').addEventListener('click', () => {
+            startFullGame('ТРЕНИРОВКА', 'Срещу 3 Бота');
+        });
+
+        function startFullGame(code, subtitle) {
+            resetGameState();
+            lobbyView.style.display = 'none';
+            seatSelectView.style.display = 'none';
+            gameView.style.display = 'flex';
+
+            document.getElementById('display-room-code').textContent = code;
+            document.getElementById('game-subtitle').textContent = subtitle;
+
+            const name = playerNameInput.value.trim() || 'Играч';
+            
+            ['bottom', 'right', 'top', 'left'].forEach(pos => {
+                document.getElementById(`seat-${pos}`).classList.remove('hidden');
+            });
+            document.getElementById('name-bottom').textContent = name;
+            document.getElementById('name-right').textContent = 'Играч Изток';
+            document.getElementById('name-top').textContent = 'Играч Север';
+            document.getElementById('name-left').textContent = 'Играч Запад';
+
+            dealerIndex = Math.floor(Math.random() * 4);
+            startRound();
         }
 
         function updateDealerVisuals() {
@@ -992,50 +1035,6 @@
                 if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
                 bubble.hideTimeout = setTimeout(() => { bubble.style.opacity = '0'; }, 2500);
             }
-        }
-
-        // Вход в играта (както за Тренировка, така и за Онлайн Стая)
-        document.getElementById('btn-create').addEventListener('click', () => {
-            const code = Math.random().toString(36).substring(2, 7).toUpperCase();
-            startFullGame(code, 'Онлайн стая');
-        });
-
-        document.getElementById('btn-join').addEventListener('click', () => {
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase() || 'СТАЯ';
-            startFullGame(code, 'Онлайн стая');
-        });
-
-        document.getElementById('btn-training').addEventListener('click', () => {
-            startFullGame('ТРЕНИРОВКА', 'Срещу 3 Бота');
-        });
-
-        document.getElementById('btn-start-multiplayer').addEventListener('click', () => {
-            seatSelectView.style.display = 'none';
-            gameView.style.display = 'flex';
-            startFullGame('ОНЛАЙН', 'Мултиплейър');
-        });
-
-        function startFullGame(code, subtitle) {
-            resetGameState();
-            lobbyView.style.display = 'none';
-            seatSelectView.style.display = 'none';
-            gameView.style.display = 'flex';
-
-            document.getElementById('display-room-code').textContent = code;
-            document.getElementById('game-subtitle').textContent = subtitle;
-
-            const name = playerNameInput.value.trim() || 'Играч';
-            
-            ['bottom', 'right', 'top', 'left'].forEach(pos => {
-                document.getElementById(`seat-${pos}`).classList.remove('hidden');
-            });
-            document.getElementById('name-bottom').textContent = name;
-            document.getElementById('name-right').textContent = 'Играч Изток';
-            document.getElementById('name-top').textContent = 'Играч Север';
-            document.getElementById('name-left').textContent = 'Играч Запад';
-
-            dealerIndex = Math.floor(Math.random() * 4);
-            startRound();
         }
 
         function animateDeal(cardsPerPlayer, dealOrder, callback) {
@@ -1122,7 +1121,6 @@
             
             sortPlayerHand();
 
-            // Анимация за първите 5 карти
             animateDeal(5, dealOrder, () => {
                 renderPlayerHand();
                 startBiddingPhase();
@@ -1271,7 +1269,6 @@
             
             sortPlayerHand();
             
-            // АНИМАЦИЯ ЗА СЛЕДВАЩИТЕ 3 КАРТИ
             animateDeal(3, dealOrder, () => {
                 gamePhase = 'playing';
                 waitingMsg.textContent = "";
@@ -1286,99 +1283,7 @@
             if (currentTurn !== 0) {
                 aiTimeout = setTimeout(aiPlay, 1000 + Math.random() * 500);
             } else {
-                if (isFirstTrick && !hasShownDeclarations) {
-                    hasShownDeclarations = true;
-                    if (currentContract !== 'Под коньете') {
-                        const decls = detectDeclarations(playerHands[0]);
-                        if (decls.length > 0) {
-                            showDeclarationsModal(decls);
-                            return;
-                        }
-                    }
-                }
-                
                 renderPlayerHand();
-            }
-        }
-
-        function processAiDeclarations(playerIndex) {
-            if (currentContract === 'Под коньете') return;
-            const decls = detectDeclarations(playerHands[playerIndex]);
-            if (decls.length > 0) {
-                let publicNames = [];
-                const team = (playerIndex % 2 === 0) ? 0 : 1;
-                decls.forEach(d => {
-                    allDeclaredItems.push({
-                        playerIndex,
-                        team,
-                        ...d
-                    });
-                    publicNames.push(d.publicName);
-                });
-                
-                const playerNames = {1: 'Изток', 2: 'Север', 3: 'Запад'};
-                showSpeechBubble(playerIndex, publicNames.join(', '));
-            }
-        }
-
-        function getValidCards(hand, trick, contract) {
-            if (trick.length === 0) return [...hand];
-            
-            const ledSuit = trick[0].card.suit;
-            const isAllTrumps = contract.includes('На коньете');
-            const isNoTrumps = contract.includes('Под коньете');
-            const trumpSuit = (!isAllTrumps && !isNoTrumps) ? contract.charAt(contract.length - 1) : null;
-            
-            const hasLedSuit = hand.some(c => c.suit === ledSuit);
-            const hasTrump = trumpSuit ? hand.some(c => c.suit === trumpSuit) : false;
-            
-            let highestPower = -1;
-            let winnerIndex = -1;
-            let highestLedPower = -1;
-            let highestTrumpPower = -1;
-
-            trick.forEach(play => {
-                const power = getCardPower(play.card, ledSuit, contract);
-                if (power > highestPower) {
-                    highestPower = power;
-                    winnerIndex = play.player;
-                }
-                if (play.card.suit === ledSuit && power > highestLedPower) {
-                    highestLedPower = power;
-                }
-                if (trumpSuit && play.card.suit === trumpSuit && power > highestTrumpPower) {
-                    highestTrumpPower = power;
-                }
-            });
-
-            const partnerIndex = (currentTurn + 2) % 4;
-            const partnerIsWinning = (winnerIndex === partnerIndex);
-
-            if (hasLedSuit) {
-                const ledCards = hand.filter(c => c.suit === ledSuit);
-                const mustOvertrump = isAllTrumps || ledSuit === trumpSuit;
-                
-                if (mustOvertrump) {
-                    const higherCards = ledCards.filter(c => getCardPower(c, ledSuit, contract) > highestLedPower);
-                    if (higherCards.length > 0) return higherCards;
-                }
-                return ledCards;
-            } else {
-                if (isAllTrumps || isNoTrumps) return [...hand];
-                
-                if (hasTrump) {
-                    const trumpCards = hand.filter(c => c.suit === trumpSuit);
-                    if (!partnerIsWinning) {
-                        if (highestTrumpPower > -1) {
-                            const higherTrumps = trumpCards.filter(c => getCardPower(c, ledSuit, contract) > highestTrumpPower);
-                            if (higherTrumps.length > 0) return higherTrumps;
-                        }
-                        return trumpCards;
-                    } else {
-                        return [...hand];
-                    }
-                }
-                return [...hand];
             }
         }
 
@@ -1387,40 +1292,17 @@
             handContainer.innerHTML = '';
             
             const hand = playerHands[0];
-            let validCards = [];
-            
             let isMyTurnToPlay = (gamePhase === 'playing' && currentTurn === 0);
 
-            if (isMyTurnToPlay) {
-                validCards = getValidCards(hand, currentTrick, currentContract || '');
-            } else {
-                validCards = [...hand];
-            }
-            
-            const isMobile = window.innerWidth <= 768;
-            
             hand.forEach((card, index) => {
-                const isValid = validCards.includes(card);
                 const cardEl = document.createElement('div');
-                cardEl.className = `card ${card.color} ${isMyTurnToPlay && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
+                cardEl.className = `card ${card.color} ${isMyTurnToPlay ? 'playable' : ''}`;
                 
-                const offset = index - (hand.length - 1) / 2;
-                const rotate = offset * (isMobile ? 3 : 5.5);
-                const translateY = Math.abs(offset) * (isMobile ? 1.5 : 2.5);
-                
-                if (isMobile) {
-                    if (hand.length > 6) cardEl.style.margin = "0 -14px";
-                    else if (hand.length > 3) cardEl.style.margin = "0 -6px";
-                    else cardEl.style.margin = "0 0px";
-                }
-                
-                cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY}px)`;
-                cardEl.style.zIndex = index;
                 cardEl.innerHTML = `<div class="text-[0.8em] font-bold absolute top-1 left-1.5 leading-none">${card.val}</div>
                                     <div class="text-3xl md:text-4xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">${card.suit}</div>
                                     <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${card.val}</div>`;
                 
-                if (isMyTurnToPlay && isValid) {
+                if (isMyTurnToPlay) {
                     cardEl.addEventListener('click', () => {
                         if (gamePhase === 'playing' && isMyTurnToPlay && currentTrick.length < 4) {
                             playCard(0, index);
@@ -1432,54 +1314,8 @@
             });
         }
 
-        function playCard(playerIndex, cardIndex, forceDeclareBelote = null) {
+        function playCard(playerIndex, cardIndex) {
             const playedCard = playerHands[playerIndex][cardIndex];
-            let isBeloteSituation = false;
-
-            if (currentContract && !currentContract.includes('Под коньете')) {
-                const isAllTrumps = currentContract.includes('На коньете');
-                const trumpSuit = (!isAllTrumps) ? currentContract.charAt(currentContract.length - 1) : null;
-                
-                let isValidBeloteSuit = true;
-                if (isAllTrumps && currentTrick.length > 0) {
-                    const ledSuit = currentTrick[0].card.suit;
-                    if (playedCard.suit !== ledSuit) {
-                        isValidBeloteSuit = false;
-                    }
-                }
-
-                if (isValidBeloteSuit && (playedCard.val === 'K' || playedCard.val === 'Q')) {
-                    const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
-                    
-                    if (isTrumpCard) {
-                        const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
-                        const hasOther = playerHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
-                        if (hasOther) isBeloteSituation = true;
-                    }
-                }
-            }
-
-            if (isBeloteSituation && playerIndex === 0 && forceDeclareBelote === null) {
-                showBeloteModal(cardIndex);
-                return;
-            }
-
-            let declareBelote = false;
-            if (isBeloteSituation) {
-                declareBelote = (playerIndex === 0) ? (forceDeclareBelote === true) : true;
-            }
-
-            if (declareBelote) {
-                if (playerIndex % 2 === 0) belotePointsRound.us += 20;
-                else belotePointsRound.them += 20;
-
-                showSpeechBubble(playerIndex, 'Белот');
-            }
-
-            if (isFirstTrick && playerIndex !== 0) {
-                processAiDeclarations(playerIndex);
-            }
-
             playerHands[playerIndex].splice(cardIndex, 1);
             currentTrick.push({ player: playerIndex, card: playedCard });
             
@@ -1502,10 +1338,7 @@
             const hand = playerHands[currentTurn];
             if (!hand || hand.length === 0) return;
             
-            const validCards = getValidCards(hand, currentTrick, currentContract || '');
-            const randomValidCard = validCards[Math.floor(Math.random() * validCards.length)];
-            const cardIndex = hand.indexOf(randomValidCard);
-            
+            const cardIndex = Math.floor(Math.random() * hand.length);
             playCard(currentTurn, cardIndex);
         }
 
@@ -1524,94 +1357,14 @@
             });
         }
 
-        function getCardPoints(card, contractStr) {
-            if (!contractStr) return 0;
-            const isAllTrumps = contractStr.includes('На коньете');
-            const isNoTrumps = contractStr.includes('Под коньете');
-            const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(contractStr.length - 1) : null;
-            
-            const isTrumpHierarchy = isAllTrumps || (card.suit === contractSuit);
-            
-            if (isTrumpHierarchy) {
-                switch(card.val) { case 'J': return 20; case '9': return 14; case 'A': return 11; case '10': return 10; case 'K': return 4; case 'Q': return 3; default: return 0; }
-            } else {
-                switch(card.val) { case 'A': return 11; case '10': return 10; case 'K': return 4; case 'Q': return 3; case 'J': return 2; default: return 0; }
-            }
-        }
-
-        function getCardPower(card, ledSuit, contractStr) {
-            if (!contractStr) return 0;
-            const isAllTrumps = contractStr.includes('На коньете');
-            const isNoTrumps = contractStr.includes('Под коньете');
-            const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(contractStr.length - 1) : null;
-            
-            const isTrumpSuit = (!isAllTrumps && !isNoTrumps && card.suit === contractSuit);
-            const isLedSuit = card.suit === ledSuit;
-            
-            let power = 0;
-            if (isTrumpSuit) {
-                power += 1000;
-                switch(card.val) { case 'J': power += 20; break; case '9': power += 14; break; case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case '8': power += 2; break; case '7': power += 1; break; }
-            } else if (isLedSuit) {
-                power += 100;
-                if (isAllTrumps) {
-                     switch(card.val) { case 'J': power += 20; break; case '9': power += 14; break; case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case '8': power += 2; break; case '7': power += 1; break; }
-                } else {
-                     switch(card.val) { case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case 'J': power += 2; break; case '9': power += 1.5; break; case '8': power += 1; break; case '7': power += 0.5; break; }
-                }
-            }
-            return power;
-        }
-
         function resolveTrick() {
-            const ledSuit = currentTrick[0].card.suit;
-            let winnerPlay = currentTrick[0];
-            let highestPower = getCardPower(winnerPlay.card, ledSuit, currentContract);
-            let trickPoints = getCardPoints(winnerPlay.card, currentContract);
-
-            for (let i = 1; i < 4; i++) {
-                let play = currentTrick[i];
-                let power = getCardPower(play.card, ledSuit, currentContract);
-                trickPoints += getCardPoints(play.card, currentContract);
-                
-                if (power > highestPower) {
-                    highestPower = power;
-                    winnerPlay = play;
-                }
-            }
-            
-            const winnerIndex = winnerPlay.player;
+            const winnerIndex = currentTrick[0].player;
             const winnerTeam = (winnerIndex % 2 === 0) ? 0 : 1;
             
-            if (winnerTeam === 0) {
-                roundScore.us += trickPoints;
-                tricksWon.us++;
-            } else {
-                roundScore.them += trickPoints;
-                tricksWon.them++;
-            }
+            if (winnerTeam === 0) roundScore.us += 10;
+            else roundScore.them += 10;
 
             const isLastTrick = playerHands[0].length === 0 && playerHands[1].length === 0;
-            if (isLastTrick) {
-                if (winnerTeam === 0) roundScore.us += 10;
-                else roundScore.them += 10;
-            }
-
-            const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
-            const winnerPos = posMap[winnerIndex];
-
-            const trickCards = document.querySelectorAll('.trick-card');
-            trickCards.forEach(cardEl => {
-                cardEl.style.transition = 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                cardEl.style.opacity = '0';
-                
-                if (winnerPos === 'bottom') cardEl.style.transform = 'translate(-50%, 350px) scale(0.1)';
-                else if (winnerPos === 'right') cardEl.style.transform = 'translate(350px, -50%) scale(0.1)';
-                else if (winnerPos === 'top') cardEl.style.transform = 'translate(-50%, -350px) scale(0.1)';
-                else if (winnerPos === 'left') cardEl.style.transform = 'translate(-350px, -50%) scale(0.1)';
-            });
-            
-            if (isFirstTrick) isFirstTrick = false;
 
             setTimeout(() => {
                 trickArea.innerHTML = '';
@@ -1627,111 +1380,17 @@
             }, 600);
         }
 
-        function getDeclPower(d) {
-            const isAllTrumps = currentContract && currentContract.includes('На коньете');
-            const trumpSuit = (currentContract && !isAllTrumps && !currentContract.includes('Под коньете')) ? currentContract.charAt(currentContract.length - 1) : null;
-            const isTrump = d.suit === trumpSuit;
-
-            if (d.isCarre) {
-                return 10000 + d.carreRank;
-            } else {
-                return d.length * 100 + d.topValIndex * 10 + (isTrump ? 1 : 0);
-            }
-        }
-
-        function resolveDeclarations() {
-            let usDecls = allDeclaredItems.filter(d => d.team === 0);
-            let themDecls = allDeclaredItems.filter(d => d.team === 1);
-
-            let winningTeam = -1;
-
-            if (usDecls.length > 0 && themDecls.length === 0) {
-                winningTeam = 0;
-            } else if (themDecls.length > 0 && usDecls.length === 0) {
-                winningTeam = 1;
-            } else if (usDecls.length > 0 && themDecls.length > 0) {
-                let maxUsPower = Math.max(...usDecls.map(getDeclPower));
-                let maxThemPower = Math.max(...themDecls.map(getDeclPower));
-
-                if (maxUsPower > maxThemPower) winningTeam = 0;
-                else if (maxThemPower > maxUsPower) winningTeam = 1;
-                else winningTeam = -1;
-            }
-
-            let declarationPoints = { us: 0, them: 0 };
-
-            if (winningTeam === 0) {
-                declarationPoints.us = usDecls.reduce((sum, d) => sum + d.points, 0);
-            } else if (winningTeam === 1) {
-                declarationPoints.them = themDecls.reduce((sum, d) => sum + d.points, 0);
-            }
-
-            declarationPoints.us += belotePointsRound.us;
-            declarationPoints.them += belotePointsRound.them;
-
-            return { 
-                points: declarationPoints, 
-                winner: winningTeam
-            };
-        }
-
         function endRoundAndScore() {
-            const declResult = resolveDeclarations();
-            const declPoints = declResult.points;
-
-            let usCardPoints = roundScore.us;
-            let themCardPoints = roundScore.them;
-
-            if (tricksWon.us === 8) usCardPoints += 90;
-            if (tricksWon.them === 8) themCardPoints += 90;
-
-            if (currentContract && currentContract.includes('Под коньете')) {
-                usCardPoints = (roundScore.us * 2) + (tricksWon.us === 8 ? 90 : 0);
-                themCardPoints = (roundScore.them * 2) + (tricksWon.them === 8 ? 90 : 0);
-            }
-
-            let usRaw = usCardPoints + declPoints.us;
-            let themRaw = themCardPoints + declPoints.them;
-
-            let usPoints = Math.round(usRaw / 10);
-            let themPoints = Math.round(themRaw / 10);
-
-            globalScore.us += usPoints;
-            globalScore.them += themPoints;
+            globalScore.us += roundScore.us;
+            globalScore.them += roundScore.them;
 
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
-            let summaryHtml = `
-                <div class="space-y-3 text-left">
-                    <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${currentContract} ${gameMultiplier > 1 ? '(x'+gameMultiplier+')' : ''}</p>
-                    <div class="flex justify-between text-slate-300">
-                        <span>Точки от ръце:</span>
-                        <span class="font-mono">Ние <b>${usCardPoints}</b> - Вие <b>${themCardPoints}</b></span>
-                    </div>
-                    <div class="flex justify-between text-slate-300">
-                        <span>Анонси/Белот:</span>
-                        <span class="font-mono">Ние <b>${declPoints.us}</b> - Вие <b>${declPoints.them}</b></span>
-                    </div>
-                    <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
-                        <p class="font-bold text-green-400 text-center">Точки за рунда: Ние +${usPoints} | Вие +${themPoints}</p>
-                    </div>
-                    <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
-                </div>
-            `;
-
-            if (globalScore.us >= 151 || globalScore.them >= 151) {
-                let winnerText = globalScore.us >= 151 ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Вражеския Отбор 😢";
-                showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
-                    dealerIndex = (dealerIndex + 1) % 4;
-                    startRound();
-                });
-            } else {
-                showModal("Край на рунда", summaryHtml, () => {
-                    dealerIndex = (dealerIndex + 1) % 4;
-                    startRound();
-                });
-            }
+            showModal("Край на рунда", `Резултат: Ние ${globalScore.us} - Вие ${globalScore.them}`, () => {
+                dealerIndex = (dealerIndex + 1) % 4;
+                startRound();
+            });
         }
 
         document.getElementById('btn-cancel-seat-select').addEventListener('click', () => {
@@ -1743,6 +1402,10 @@
             resetGameState();
             lobbyView.style.display = 'block';
             gameView.style.display = 'none';
+        });
+
+        window.addEventListener('load', () => {
+            initAuth();
         });
     </script>
 </body>
