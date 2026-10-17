@@ -310,9 +310,7 @@
             100% { transform: scale(1); opacity: 1; } 
         }
 
-        /* ---------------------------------------------------- */
-        /*   ОПТИМИЗИРАН МОБИЛЕН CSS РЕЖИМ                      */
-        /* ---------------------------------------------------- */
+        /* ОПТИМИЗИРАН МОБИЛЕН CSS РЕЖИМ */
         @media (max-width: 640px) {
             body {
                 padding: 0;
@@ -358,7 +356,6 @@
                 z-index: 40;
             }
 
-            /* МАСАТА: В центъра на екрана */
             .poker-table {
                 width: 90vw; 
                 height: 44vh;
@@ -380,7 +377,6 @@
             .seat-left { top: 50%; left: -6px; transform: translate(0, -50%); z-index: 25; }
             .seat-right { top: 50%; right: -6px; transform: translate(0, -50%); z-index: 25; }
             
-            /* Южното място: Поставено веднага под масата */
             .seat-bottom { 
                 bottom: -36px !important; 
                 left: 50%; 
@@ -388,7 +384,6 @@
                 z-index: 35; 
             }
 
-            /* РЪКАТА НА ИГРАЧА: ИЗЦЯЛО ИЗВЪН МАСАТА */
             .hand-container {
                 position: fixed !important;
                 bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
@@ -419,7 +414,6 @@
                 z-index: 120; 
             }
 
-            /* ВЗЯТКАТА В СРЕДАТА (РАЗДАЛЕЧЕНИ КАРТИ) */
             #trick-area { 
                 width: 210px !important; 
                 height: 210px !important; 
@@ -518,7 +512,6 @@
         <p class="text-slate-300 text-sm mb-6">Код: <span id="seat-room-code" class="text-green-400 font-mono font-bold text-lg bg-black/30 px-3 py-1 rounded-lg ml-1 border border-green-500/30"></span></p>
 
         <div class="grid grid-cols-2 gap-4 mb-8">
-            <!-- Team 1 -->
             <div class="bg-black/20 p-4 rounded-xl border border-white/5">
                 <h3 class="text-sm font-bold text-green-400 mb-3 tracking-wider">ОТБОР 1 (НИЕ)</h3>
                 <div class="flex flex-col gap-3">
@@ -533,7 +526,6 @@
                 </div>
             </div>
 
-            <!-- Team 2 -->
             <div class="bg-black/20 p-4 rounded-xl border border-white/5">
                 <h3 class="text-sm font-bold text-red-400 mb-3 tracking-wider">ОТБОР 2 (ВИЕ)</h3>
                 <div class="flex flex-col gap-3">
@@ -560,8 +552,6 @@
     </div>
 
     <div id="game-view" class="w-full h-full flex flex-col p-4 relative">
-        
-        <!-- Scoreboard -->
         <div id="scoreboard" class="absolute top-4 left-4 glass-panel border border-green-500/50 rounded-xl p-3 z-50 flex gap-5 hidden">
             <div class="text-center min-w-[50px]">
                 <div class="text-[10px] text-green-400 font-black tracking-widest">НИЕ</div>
@@ -574,18 +564,15 @@
             </div>
         </div>
 
-        <!-- Current Game Indicator -->
         <div id="current-game-indicator" class="absolute top-4 right-4 md:left-1/2 md:transform md:-translate-x-1/2 md:right-auto glass-panel border border-yellow-500/50 text-slate-300 font-medium px-5 py-2.5 rounded-xl hidden z-50 flex items-center gap-2">
             <span class="text-xs uppercase tracking-wider opacity-80">Игра:</span> 
             <span id="current-game-value" class="text-yellow-400 font-bold text-lg drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"></span>
         </div>
 
-        <!-- Log Bar -->
         <div id="game-log-bar" class="absolute top-20 left-1/2 transform -translate-x-1/2 glass-panel text-yellow-300 font-medium text-xs md:text-sm px-5 py-1.5 rounded-full z-40 hidden max-w-[85vw] truncate text-center border-white/10">
             <span class="opacity-70 text-white mr-2">Анонс:</span><span id="log-text" class="text-white font-bold">Няма</span>
         </div>
 
-        <!-- Top Bar -->
         <div class="flex justify-between items-start mb-2 z-40 relative pointer-events-none top-bar-container">
             <div class="glass-panel px-3 py-1.5 rounded-xl pointer-events-auto">
                 <h2 class="text-sm md:text-lg font-bold text-white flex items-center gap-2">Стая: <span id="display-room-code" class="text-emerald-400 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded"></span></h2>
@@ -596,7 +583,6 @@
 
         <div class="flex-grow flex items-center justify-center pointer-events-none">
             <div class="poker-table pointer-events-auto">
-                <!-- Seats -->
                 <div id="seat-top" class="seat seat-top hidden">
                     <div class="dealer-badge" id="dealer-top">D</div>
                     <div class="speech-bubble" id="bubble-top"></div>
@@ -621,18 +607,15 @@
                     <div class="font-bold truncate text-sm text-green-400" id="name-bottom">Аз</div>
                 </div>
 
-                <!-- Center Table Info -->
                 <div id="center-info" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0 flex flex-col items-center opacity-30 pointer-events-none mix-blend-overlay">
                     <div class="text-4xl font-black tracking-widest text-black drop-shadow-md">БЕЛОТ</div>
                 </div>
                 
-                <!-- Status Messages Over Table -->
                 <div id="waiting-msg" class="absolute top-[35%] left-1/2 transform -translate-x-1/2 text-center text-sm md:text-base font-medium text-white bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm empty:hidden z-10"></div>
                 <div id="contract-display" class="absolute top-[65%] left-1/2 transform -translate-x-1/2 mt-2 text-lg font-bold text-yellow-400 drop-shadow-md hidden z-10"></div>
 
                 <div id="trick-area"></div>
 
-                <!-- Bidding Panel -->
                 <div id="bidding-panel" class="glass-panel">
                     <div class="w-full text-center text-xs text-slate-300 font-bold mb-1 uppercase tracking-wider opacity-80">Твой ред за анонс</div>
                     <div class="flex w-full gap-2 justify-center">
@@ -654,7 +637,6 @@
                     <button class="bid-btn pass w-full mt-1" data-bid="Пазас">ПАЗАС</button>
                 </div>
 
-                <!-- Hand Container -->
                 <div class="hand-container" id="my-hand"></div>
             </div>
         </div>
@@ -700,7 +682,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
         const fbConfig = {
@@ -724,7 +706,6 @@
         let mySeatIndex = -1;
         let isTrainingMode = false;
 
-        // Training Game State
         let trainingHands = [[], [], [], []];
         let currentTrick = [];
         let currentTurn = 0;
@@ -798,8 +779,6 @@
 
         function detectDeclarations(hand) {
             let decls = [];
-            
-            // Check Carres
             const valCounts = {};
             hand.forEach(c => { valCounts[c.val] = (valCounts[c.val] || 0) + 1; });
             
@@ -818,7 +797,6 @@
                 }
             });
 
-            // Check Sequences (Tierce, Quarte=Педесе, Quint=Сто)
             suits.forEach(s => {
                 const suitCards = hand.filter(c => c.suit === s).map(c => c.val);
                 let currentSeq = [];
@@ -888,7 +866,6 @@
 
             const checkboxes = document.querySelectorAll('#declarations-modal-list input[type="checkbox"]');
             let selectedPublicNames = [];
-            let selectedFullNames = [];
 
             checkboxes.forEach(cb => {
                 if (cb.checked) {
@@ -900,7 +877,6 @@
                         ...item
                     });
                     selectedPublicNames.push(item.publicName);
-                    selectedFullNames.push(item.name);
                 }
             });
 
@@ -967,7 +943,7 @@
                 const savedName = localStorage.getItem('belote_name');
                 if(savedName) playerNameInput.value = savedName;
             } catch (error) {
-                console.warn("Автентикацията (Firebase) пропадна, но Тренировката ще работи.");
+                console.warn("Автентикацията (Firebase) пропадна.");
             }
         }
 
@@ -1135,7 +1111,6 @@
 
         function renderSeatSelectionView(room) {
             currentRoomSeats = room.seats || [null, null, null, null];
-            
             mySeatIndex = currentRoomSeats.findIndex(s => s && s.uid === currentUser.uid);
 
             [0, 1, 2, 3].forEach(seatIdx => {
@@ -1161,11 +1136,7 @@
             });
 
             const btnStart = document.getElementById('btn-start-multiplayer');
-            if (mySeatIndex !== -1) {
-                btnStart.disabled = false;
-            } else {
-                btnStart.disabled = true;
-            }
+            btnStart.disabled = mySeatIndex === -1;
         }
 
         async function selectSeat(targetSeatIndex) {
@@ -1178,11 +1149,8 @@
                 if (!docSnap.exists()) return;
 
                 const seats = docSnap.data().seats || [null, null, null, null];
-                
                 const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
-                if (existingIndex !== -1) {
-                    seats[existingIndex] = null;
-                }
+                if (existingIndex !== -1) seats[existingIndex] = null;
 
                 if (!seats[targetSeatIndex]) {
                     seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
@@ -1195,6 +1163,7 @@
             }
         }
 
+        // КОРИГИРАНО СТАРТИРАНЕ НА ИГРАТА В MULTIPLAYER (Фикс за Nested Arrays)
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1 || !currentRoomCode) return;
 
@@ -1210,31 +1179,34 @@
                 let seats = [...(docSnap.data().seats || [null, null, null, null])];
                 let botNum = 1;
                 
-                // Автоматично попълване на свободните места с AI Ботове
                 for (let i = 0; i < 4; i++) {
                     if (!seats[i]) {
                         seats[i] = { uid: `bot_${i}`, name: `Бот ${botNum++}`, isBot: true };
                     }
                 }
 
-                // Подготовка и разбъркване на тестето
                 initDeck();
-                let hands = [[], [], [], []];
                 let initialDealer = Math.floor(Math.random() * 4);
                 let dealOrder = [(initialDealer + 1) % 4, (initialDealer + 2) % 4, (initialDealer + 3) % 4, initialDealer];
 
-                // Раздават се по 5 начални карти
+                // Важно: Полетата за ръцете се записват като отделни обекти/полета, за да се избегнат вложени масиви
+                let playerHands = {
+                    hand_0: [],
+                    hand_1: [],
+                    hand_2: [],
+                    hand_3: []
+                };
+
                 for (let r = 0; r < 5; r++) {
                     for (let p of dealOrder) {
-                        hands[p].push(deck.pop());
+                        playerHands[`hand_${p}`].push(deck.pop());
                     }
                 }
 
-                // Обновяване на стаята в Firestore за стартиране на играта
                 await updateDoc(roomRef, {
                     status: 'playing',
                     seats: seats,
-                    hands: hands,
+                    hands: playerHands,
                     deck: deck,
                     dealerIndex: initialDealer,
                     currentTurn: (initialDealer + 1) % 4,
@@ -1353,7 +1325,7 @@
                     currentContract = data.currentContract;
 
                     if (data.hands && mySeatIndex !== -1) {
-                        trainingHands[0] = data.hands[mySeatIndex] || [];
+                        trainingHands[0] = data.hands[`hand_${mySeatIndex}`] || [];
                         renderPlayerHand();
                     }
 
@@ -1366,7 +1338,6 @@
                         biddingPanel.style.display = 'none';
                     }
 
-                    // Проверка дали на ред е бот
                     checkAndTriggerBotTurn(data);
                 }
             }, (error) => console.error("Listen room error:", error));
@@ -1377,9 +1348,7 @@
             const activePlayerIndex = roomData.currentTurn;
             const activeSeat = roomData.seats[activePlayerIndex];
 
-            // Проверка дали играчът на ред е бот
             if (activeSeat && activeSeat.isBot) {
-                // Изпълняваме бота само ако текущият играч е първият реален играч в стаята
                 const firstHumanIndex = roomData.seats.findIndex(s => s && !s.isBot);
                 if (mySeatIndex === firstHumanIndex) {
                     setTimeout(async () => {
@@ -1431,24 +1400,22 @@
         }
 
         async function executeBotPlayMultiplayer(roomData) {
-            const botHand = roomData.hands[roomData.currentTurn] || [];
+            const botHand = roomData.hands[`hand_${roomData.currentTurn}`] || [];
             if (botHand.length === 0) return;
 
             const validCards = getValidCards(botHand, roomData.currentTrick || [], roomData.currentContract || '');
             const cardToPlay = validCards[Math.floor(Math.random() * validCards.length)];
             
             const updatedHand = botHand.filter(c => !(c.val === cardToPlay.val && c.suit === cardToPlay.suit));
-            const updatedHands = [...roomData.hands];
-            updatedHands[roomData.currentTurn] = updatedHand;
-
-            const updatedTrick = [...(roomData.currentTrick || []), { player: roomData.currentTurn, card: cardToPlay }];
+            
+            let updatePayload = {};
+            updatePayload[`hands.hand_${roomData.currentTurn}`] = updatedHand;
+            updatePayload['currentTrick'] = [...(roomData.currentTrick || []), { player: roomData.currentTurn, card: cardToPlay }];
+            
             let nextTurn = (roomData.currentTurn + 1) % 4;
+            updatePayload['currentTurn'] = updatePayload['currentTrick'].length === 4 ? roomData.currentTurn : nextTurn;
 
-            await updateDoc(getRoomPath(currentRoomCode), {
-                hands: updatedHands,
-                currentTrick: updatedTrick,
-                currentTurn: updatedTrick.length === 4 ? roomData.currentTurn : nextTurn
-            });
+            await updateDoc(getRoomPath(currentRoomCode), updatePayload);
         }
 
         document.getElementById('btn-training').addEventListener('click', () => {
