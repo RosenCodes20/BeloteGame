@@ -1175,23 +1175,29 @@
                 startBtn.disabled = true;
                 startBtn.textContent = "Зареждане...";
 
-                // 1. Попълваме останалите свободни места с Ботове в транзакция
-                await runTransaction(db, async (transaction) => {
-                    const docSnap = await transaction.get(roomRef);
-                    if (!docSnap.exists()) throw "Стаята не съществува!";
-                    
-                    let seats = docSnap.data().seats || [null, null, null, null];
-                    let botCounter = 1;
-                    for (let i = 0; i < 4; i++) {
-                        if (!seats[i]) {
-                            seats[i] = { uid: `bot_${i}`, name: `Бот ${botCounter++}`, isBot: true };
-                        }
+                // 1. Попълваме останалите свободни места с Ботове в DB
+                let updatedSeats = [...currentRoomSeats];
+                let botCounter = 1;
+                for (let i = 0; i < 4; i++) {
+                    if (!updatedSeats[i]) {
+                        updatedSeats[i] = { uid: `bot_${i}`, name: `Бот ${botCounter++}`, isBot: true };
                     }
-                    transaction.update(roomRef, { seats: seats });
-                });
+                }
 
-                // 2. Стартираме играта и раздаваме картите
-                await startMultiplayerGameInDb(currentRoomCode);
+                // 2. Преминаваме към самата игра
+                if (unsubscribeSeatSelect) {
+                    unsubscribeSeatSelect();
+                    unsubscribeSeatSelect = null;
+                }
+                
+                seatSelectView.style.display = 'none';
+                gameView.style.display = 'flex';
+                document.getElementById('display-room-code').textContent = currentRoomCode;
+                updateMultiplayerSeatNames(updatedSeats);
+
+                // 3. Раздаваме картите в базата данни
+                await startMultiplayerGameInDb(currentRoomCode, updatedSeats);
+                listenToRoom(currentRoomCode);
 
             } catch(e) {
                 console.error("Грешка при стартиране:", e);
@@ -1284,7 +1290,7 @@
             });
         }
 
-        async function startMultiplayerGameInDb(code) {
+        async function startMultiplayerGameInDb(code, filledSeats = null) {
             const roomRef = getRoomPath(code);
             let newDeck = [];
             suits.forEach(suit => {
@@ -1304,7 +1310,7 @@
                 }
             }
 
-            await updateDoc(roomRef, {
+            let updateObj = {
                 status: 'playing',
                 gamePhase: 'bidding',
                 deck: newDeck,
@@ -1319,7 +1325,13 @@
                 lastBidderIndex: -1,
                 currentTrick: [],
                 scores: { us: 0, them: 0 }
-            });
+            };
+
+            if (filledSeats) {
+                updateObj.seats = filledSeats;
+            }
+
+            await updateDoc(roomRef, updateObj);
         }
 
         function syncMultiplayerGameState(data) {
