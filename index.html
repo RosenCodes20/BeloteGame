@@ -159,7 +159,7 @@
             padding: 6px 12px;
             font-size: 13px;
             font-weight: bold;
-            z-index: 100;
+            z-index: 120;
             opacity: 0;
             transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
@@ -168,7 +168,7 @@
         }
         .speech-bubble::after { content: ''; position: absolute; border-width: 6px; border-style: solid; }
         
-        .seat-bottom .speech-bubble { top: -65px; left: 50%; transform: translateX(-50%); z-index: 100; }
+        .seat-bottom .speech-bubble { top: -45px; left: 50%; transform: translateX(-50%); z-index: 120; }
         .seat-bottom .speech-bubble::after { bottom: -11px; left: 50%; transform: translateX(-50%); border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent; }
         
         .seat-top .speech-bubble { bottom: -45px; left: 50%; transform: translateX(-50%); }
@@ -188,7 +188,7 @@
             transform: translateX(-50%);
             padding: 16px;
             border-radius: 16px;
-            z-index: 40;
+            z-index: 120;
             display: none;
             flex-wrap: wrap;
             gap: 8px;
@@ -309,7 +309,7 @@
         }
 
         /* ---------------------------------------------------- */
-        /*   ОПТИМИЗИРАН МОБИЛЕН CSS РЕЖИМ (ФИКСИРАНИ ЗАСТЪПВАНИЯ) */
+        /*   ОПТИМИЗИРАН МОБИЛЕН CSS РЕЖИМ                      */
         /* ---------------------------------------------------- */
         @media (max-width: 640px) {
             body {
@@ -318,7 +318,6 @@
                 overscroll-behavior-y: none; 
             }
 
-            /* 1. ГОРНА ЛЕНТА: Без прекриване на елементите */
             .top-bar-container {
                 position: absolute !important;
                 top: calc(env(safe-area-inset-top, 8px) + 50px) !important;
@@ -349,7 +348,6 @@
                 z-index: 60;
             }
 
-            /* Черната лента с анонси слиза ПРИЛЕДНО под Горната стая */
             #game-log-bar { 
                 top: calc(env(safe-area-inset-top, 8px) + 105px) !important; 
                 font-size: 11px !important; 
@@ -358,7 +356,7 @@
                 z-index: 40;
             }
 
-            /* 2. МАСА: Перфектно центрирана с малко увеличение */
+            /* МАСАТА: В центъра на екрана */
             .poker-table {
                 width: 90vw; 
                 height: 44vh;
@@ -368,7 +366,6 @@
                 box-shadow: 0 0 0 2px #1a0e08, inset 0 0 0 2px #d4af37, inset 0 0 30px rgba(0,0,0,0.8), 0 15px 30px -10px rgba(0,0,0,0.8);
             }
 
-            /* 3. ПОЗИЦИИ НА ИГРАЧИТЕ ВЪРХУ МАСАТА */
             .seat {
                 min-width: 65px;
                 padding: 3px 8px;
@@ -377,12 +374,11 @@
                 border-radius: 12px;
             }
             
-            /* Бот Север: Вътре в борда на масата */
             .seat-top { top: 12px !important; left: 50%; transform: translate(-50%, 0); z-index: 25; }
             .seat-left { top: 50%; left: -6px; transform: translate(0, -50%); z-index: 25; }
             .seat-right { top: 50%; right: -6px; transform: translate(0, -50%); z-index: 25; }
             
-            /* Играч (Юг): Позициониран над картите, под масата */
+            /* Южното място: Поставено веднага под масата */
             .seat-bottom { 
                 bottom: -36px !important; 
                 left: 50%; 
@@ -390,7 +386,7 @@
                 z-index: 35; 
             }
 
-            /* 4. РЪКАТА НА ИГРАЧА: ИЗЦЯЛО ИЗВЪН МАСАТА В ДОЛНИЯ КРАЙ */
+            /* РЪКАТА НА ИГРАЧА: ИЗЦЯЛО ИЗВЪН МАСАТА */
             .hand-container {
                 position: fixed !important;
                 bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
@@ -414,15 +410,13 @@
                 transform: translateY(-28px) scale(1.15) !important;
             }
 
-            /* Балончета за анонси над играчите */
             .seat-bottom .speech-bubble { 
                 top: -42px !important; 
                 left: 50%; 
                 transform: translateX(-50%); 
-                z-index: 110; 
+                z-index: 120; 
             }
 
-            /* 5. ВЗЯТКАТА И ЦЕНТРАЛНАТА ИНФОРМАЦИЯ */
             #trick-area { 
                 width: 140px; 
                 height: 140px; 
@@ -437,7 +431,6 @@
                 border-radius: 99px;
             }
 
-            /* 6. ПАНЕЛ ЗА АНОНСИ */
             #bidding-panel { 
                 bottom: calc(100px + env(safe-area-inset-bottom, 0px)); 
                 gap: 6px; 
@@ -791,7 +784,7 @@
         function detectDeclarations(hand) {
             let decls = [];
             
-            // Check Carres (4 of a kind: J, 9, A, K, Q, 10)
+            // Check Carres
             const valCounts = {};
             hand.forEach(c => { valCounts[c.val] = (valCounts[c.val] || 0) + 1; });
             
@@ -801,6 +794,7 @@
                     if (val === 'J') pts = 200;
                     decls.push({
                         type: 'carre',
+                        publicName: 'Каре',
                         name: `Каре (${pts}т.)`,
                         points: pts,
                         isCarre: true,
@@ -809,7 +803,7 @@
                 }
             });
 
-            // Check Sequences (Tierce = 3, Quarte = 4, Quint = 5+)
+            // Check Sequences (Tierce, Quarte=Педесе, Quint=Сто)
             suits.forEach(s => {
                 const suitCards = hand.filter(c => c.suit === s).map(c => c.val);
                 let currentSeq = [];
@@ -841,6 +835,7 @@
             const topVal = seq[seq.length - 1];
             decls.push({
                 type: 'seq',
+                publicName: typeName,
                 name: `${typeName} ${suit} (${pts}т.)`,
                 points: pts,
                 suit: suit,
@@ -877,7 +872,8 @@
             modalEl.classList.remove('flex');
 
             const checkboxes = document.querySelectorAll('#declarations-modal-list input[type="checkbox"]');
-            let selectedNames = [];
+            let selectedPublicNames = [];
+            let selectedFullNames = [];
 
             checkboxes.forEach(cb => {
                 if (cb.checked) {
@@ -888,25 +884,25 @@
                         team: 0,
                         ...item
                     });
-                    selectedNames.push(item.name);
+                    selectedPublicNames.push(item.publicName);
+                    selectedFullNames.push(item.name);
                 }
             });
 
-            if (selectedNames.length > 0) {
+            if (selectedPublicNames.length > 0) {
                 const bubble = document.getElementById('bubble-bottom');
-                bubble.textContent = selectedNames.join(', ');
+                bubble.textContent = selectedPublicNames.join(', ');
                 bubble.style.opacity = '1';
 
                 const logBar = document.getElementById('game-log-bar');
                 const logText = document.getElementById('log-text');
                 logBar.classList.remove('hidden');
-                logText.textContent = `Вие обявихте: ${selectedNames.join(', ')}`;
+                logText.textContent = `Вие обявихте: ${selectedPublicNames.join(', ')}`;
 
-                setTimeout(() => { 
-                    if(bubble) {
-                        bubble.style.opacity = '0'; 
-                    }
-                }, 6000);
+                if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+                bubble.hideTimeout = setTimeout(() => { 
+                    if(bubble) bubble.style.opacity = '0'; 
+                }, 2500);
             }
 
             renderPlayerHand();
@@ -1501,6 +1497,11 @@
             bubble.textContent = displayBid;
             bubble.style.opacity = '1';
 
+            if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+            bubble.hideTimeout = setTimeout(() => {
+                if (bubble) bubble.style.opacity = '0';
+            }, 2000);
+
             const logBar = document.getElementById('game-log-bar');
             const logText = document.getElementById('log-text');
             logBar.classList.remove('hidden');
@@ -1615,7 +1616,7 @@
             if (currentContract === 'Под коньете') return;
             const decls = detectDeclarations(trainingHands[playerIndex]);
             if (decls.length > 0) {
-                let names = [];
+                let publicNames = [];
                 const team = (playerIndex % 2 === 0) ? 0 : 1;
                 decls.forEach(d => {
                     allDeclaredItems.push({
@@ -1623,21 +1624,24 @@
                         team,
                         ...d
                     });
-                    names.push(d.name);
+                    publicNames.push(d.publicName);
                 });
                 
                 const posMap = {1: 'right', 2: 'top', 3: 'left'};
                 const playerNames = {1: 'Изток', 2: 'Север', 3: 'Запад'};
                 const bubble = document.getElementById(`bubble-${posMap[playerIndex]}`);
-                bubble.textContent = names.join(', ');
+                bubble.textContent = publicNames.join(', ');
                 bubble.style.opacity = '1';
 
                 const logBar = document.getElementById('game-log-bar');
                 const logText = document.getElementById('log-text');
                 logBar.classList.remove('hidden');
-                logText.textContent = `${playerNames[playerIndex]} обяви: ${names.join(', ')}`;
+                logText.textContent = `${playerNames[playerIndex]} обяви: ${publicNames.join(', ')}`;
 
-                setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 6000);
+                if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+                bubble.hideTimeout = setTimeout(() => { 
+                    if(bubble) bubble.style.opacity = '0'; 
+                }, 2500);
             }
         }
 
@@ -1813,7 +1817,11 @@
                 let prevText = bubble.style.opacity === '1' ? bubble.textContent + ', ' : '';
                 bubble.textContent = prevText + 'Белот';
                 bubble.style.opacity = '1';
-                setTimeout(() => { if(bubble) bubble.style.opacity = '0'; }, 3000);
+
+                if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
+                bubble.hideTimeout = setTimeout(() => { 
+                    if(bubble) bubble.style.opacity = '0'; 
+                }, 2000);
             }
 
             if (isFirstTrick && playerIndex !== 0) {
