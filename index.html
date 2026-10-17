@@ -318,70 +318,136 @@
         /* ----------------------------------------------------
            СПЕЦИАЛНИ МОБИЛНИ СТИЛОВЕ И ОПТИМИЗАЦИИ (Mobile First)
            ---------------------------------------------------- */
-        @media (max-width: 640px) {
+           @media (max-width: 640px) {
             body {
                 padding: 0;
                 overflow: hidden;
+                overscroll-behavior-y: none; 
             }
 
+            /* 1. МАСАТА: Центрирана вертикално и хоризонтално */
             .poker-table {
-                width: 95vw;
-                height: 46vh;
-                border-width: 8px;
-                margin-top: 15px;
+                width: 90vw; 
+                height: 42vh;
+                border-width: 6px;
+                margin: auto !important; /* Центрира масата идеално */
+                position: relative;
+                box-shadow: 0 0 0 2px #1a0e08, inset 0 0 0 2px #d4af37, inset 0 0 30px rgba(0,0,0,0.8), 0 15px 30px -10px rgba(0,0,0,0.8);
             }
 
+            /* 2. ИГРАЧИТЕ: Позиционирани правилно около масата */
             .seat {
-                min-width: 72px;
+                min-width: 65px;
                 padding: 4px 8px;
                 font-size: 11px;
                 font-weight: 700;
+                border-radius: 12px;
+            }
+            .seat-top { top: -14px; left: 50%; transform: translate(-50%, 0); z-index: 25; }
+            .seat-left { top: 50%; left: -6px; transform: translate(0, -50%); z-index: 25; }
+            .seat-right { top: 50%; right: -6px; transform: translate(0, -50%); z-index: 25; }
+            
+            /* Вашето име (Юг) – поставено непосредствено под масата */
+            .seat-bottom { 
+                bottom: -32px; 
+                left: 50%; 
+                transform: translate(-50%, 0); 
+                z-index: 25; 
             }
 
-            .seat-top { top: -18px; left: 50%; transform: translate(-50%, 0); z-index: 25; }
-            .seat-bottom { bottom: -18px; left: 50%; transform: translate(-50%, 0); z-index: 50; }
-            .seat-left { top: 46%; left: -6px; transform: translate(0, -50%); z-index: 25; }
-            .seat-right { top: 46%; right: -6px; transform: translate(0, -50%); z-index: 25; }
+            /* 3. КАРТИТЕ В РЪКАТА: Изтипосани изцяло под масата в долната част на телефона */
+            .hand-container {
+                position: fixed !important;
+                bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 100 !important;
+                width: 100vw;
+                padding: 0;
+            }
 
             .card {
-                width: 48px;
-                height: 72px;
+                width: 58px; /* Удобен размер за докосване */
+                height: 85px;
                 font-size: 16px;
-                margin: 0 -14px;
+                margin: 0 -14px; /* Ветрилообразен ефект */
                 border-radius: 6px;
+                box-shadow: -2px 4px 10px rgba(0,0,0,0.6);
             }
 
             .card.playable:hover, .card.playable:active {
-                transform: translateY(-20px) scale(1.12) !important;
+                transform: translateY(-30px) scale(1.15) !important;
             }
 
-            .hand-container { 
-                bottom: 4px; 
-                padding-bottom: max(env(safe-area-inset-bottom), 6px);
-                z-index: 40;
-            }
-
+            /* 4. ВЗЯТКАТА И СТАТУСИТЕ */
             #trick-area { 
-                width: 150px; 
-                height: 150px; 
+                width: 140px; 
+                height: 140px; 
+            }
+
+            #contract-display {
+                top: 70% !important; 
+                font-size: 13px !important;
+                background: rgba(0, 0, 0, 0.75);
+                border: 1px solid rgba(250, 204, 21, 0.4);
+                padding: 4px 14px;
+                border-radius: 99px;
+            }
+
+            /* 5. UI В ГОРНАТА ЧАСТ */
+            #scoreboard {
+                top: env(safe-area-inset-top, 8px) !important;
+                left: 8px !important;
+                transform: none !important;
+                padding: 6px 10px !important;
+                background: rgba(15, 23, 42, 0.9);
+                z-index: 60;
+                border-radius: 12px;
+            }
+            #scoreboard .text-2xl { font-size: 1.1rem !important; }
+
+            #current-game-indicator {
+                top: env(safe-area-inset-top, 8px) !important;
+                right: 8px !important;
+                left: auto !important;
+                transform: none !important;
+                padding: 6px 10px !important;
+                background: rgba(15, 23, 42, 0.9);
+                z-index: 60;
+            }
+
+            .top-bar-container {
+                margin-top: calc(55px + env(safe-area-inset-top, 0px)) !important;
+            }
+
+            #game-log-bar { 
+                top: calc(105px + env(safe-area-inset-top, 0px)) !important; 
+                font-size: 11px !important; 
+                padding: 4px 12px !important;
+                background: rgba(0, 0, 0, 0.85);
+            }
+
+            /* 6. ПАНЕЛ ЗА АНОНСИ (НАДДАВАНЕ) */
+            #bidding-panel { 
+                bottom: calc(105px + env(safe-area-inset-bottom, 0px)); 
+                gap: 6px; 
+                padding: 12px; 
+                border-radius: 14px; 
+                width: 92vw;
+                max-width: 340px;
+                background: rgba(15, 23, 42, 0.95);
+                z-index: 110; /* Показва се над картите по време на наддаването */
+            }
+
+            .bid-btn { 
+                padding: 8px 6px; 
+                font-size: 12px; 
+                border-radius: 8px;
             }
 
             .speech-bubble { 
                 font-size: 11px; 
-                padding: 3px 7px; 
-            }
-
-            #bidding-panel { 
-                bottom: 95px; 
-                gap: 5px; 
-                padding: 10px; 
-                border-radius: 14px; 
-                max-width: 320px;
-            }
-
-            .bid-btn { 
-                padding: 6px 8px; 
-                font-size: 12px; 
+                padding: 4px 8px; 
             }
 
             .dealer-badge { 
@@ -390,47 +456,6 @@
                 font-size: 9px; 
                 top: -5px; 
                 right: -5px; 
-            }
-            
-            .top-bar-container {
-                padding-top: max(env(safe-area-inset-top), 6px);
-                margin-bottom: 0px !important;
-            }
-
-            #scoreboard {
-                position: relative !important;
-                top: auto !important;
-                left: auto !important;
-                transform: none !important;
-                padding: 4px 10px !important;
-                z-index: 10;
-                border-width: 1px !important;
-            }
-
-            #current-game-indicator {
-                position: relative !important;
-                top: auto !important;
-                right: auto !important;
-                left: auto !important;
-                transform: none !important;
-                padding: 4px 10px !important;
-                z-index: 10;
-            }
-
-            #game-log-bar { 
-                top: 72px !important; 
-                font-size: 11px !important; 
-                padding: 3px 12px !important;
-                max-width: 92vw !important;
-            }
-
-            #contract-display {
-                top: 62% !important;
-                font-size: 14px !important;
-            }
-
-            .modal-content {
-                padding: 20px !important;
             }
         }
     </style>
