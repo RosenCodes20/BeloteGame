@@ -1087,7 +1087,6 @@
                 const data = docSnap.data();
                 renderSeatSelectionView(data);
 
-                // АКО СТАТУСЪТ Е 'playing', АВТОМАТИЧНО МИНАВАМЕ НА МАСАТА В ИГРАТА
                 if (data.status === 'playing' && mySeatIndex !== -1 && gameView.style.display !== 'flex') {
                     if (unsubscribeSeatSelect) {
                         unsubscribeSeatSelect();
@@ -1167,13 +1166,19 @@
 
         // РЪЧЕН СТАРТ НА ИГРАТА (Свободните места стават БОТОВЕ)
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
-            if (mySeatIndex === -1) return;
+            if (mySeatIndex === -1 || !currentRoomCode) return;
             
             const roomRef = getRoomPath(currentRoomCode);
+            const startBtn = document.getElementById('btn-start-multiplayer');
+            
             try {
+                startBtn.disabled = true;
+                startBtn.textContent = "Зареждане...";
+
+                // 1. Попълваме останалите свободни места с Ботове в транзакция
                 await runTransaction(db, async (transaction) => {
                     const docSnap = await transaction.get(roomRef);
-                    if (!docSnap.exists()) return;
+                    if (!docSnap.exists()) throw "Стаята не съществува!";
                     
                     let seats = docSnap.data().seats || [null, null, null, null];
                     let botCounter = 1;
@@ -1185,9 +1190,14 @@
                     transaction.update(roomRef, { seats: seats });
                 });
 
+                // 2. Стартираме играта и раздаваме картите
                 await startMultiplayerGameInDb(currentRoomCode);
+
             } catch(e) {
-                console.error("Error starting game:", e);
+                console.error("Грешка при стартиране:", e);
+                showError("Грешка при старт: " + (e.message || e));
+                startBtn.disabled = false;
+                startBtn.textContent = "🚀 Старт на играта (Свободните са Ботове)";
             }
         });
 
@@ -1340,7 +1350,7 @@
             updateDealerVisuals();
             updateTurnVisuals();
 
-            // Автоматичен контрол на БОТОВЕТЕ, ако е техен ред в онлайн стаята
+            // Автоматичен контрол на БОТОВЕТЕ
             const currentPlayerObj = currentRoomSeats[currentTurn];
             if (currentPlayerObj && currentPlayerObj.isBot && mySeatIndex === 0) {
                 if (gamePhase === 'bidding') {
