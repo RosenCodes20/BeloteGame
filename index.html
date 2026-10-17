@@ -1046,16 +1046,29 @@
             }
         }
 
+        // ПОДОБРЕНА ЛОГИКА ЗА СЪЗДАВАНЕ НА СТАЯ
         document.getElementById('btn-create').addEventListener('click', async () => {
-            if (!currentUser) return;
             const name = playerNameInput.value.trim() || 'Играч';
             localStorage.setItem('belote_name', name);
+
+            if (!currentUser) {
+                try {
+                    await signInAnonymously(auth);
+                    currentUser = auth.currentUser;
+                } catch (e) {
+                    showError("Свързването към сървъра се забави. Опитайте пак.");
+                    return;
+                }
+            }
 
             const code = Math.random().toString(36).substring(2, 7).toUpperCase();
             const roomRef = getRoomPath(code);
 
             try {
-                const initialSeats = [null, null, null, null];
+                const initialSeats = [
+                    { uid: currentUser.uid, name: name },
+                    null, null, null
+                ];
                 await setDoc(roomRef, {
                     createdAt: Date.now(),
                     status: 'waiting',
@@ -1063,13 +1076,25 @@
                 });
                 joinSeatSelectionUI(code);
             } catch (err) {
-                showError("Грешка при създаване: " + err.message);
+                console.error("Грешка:", err);
+                showError("Грешка при създаване на стая: " + err.message);
             }
         });
 
         document.getElementById('btn-join').addEventListener('click', async () => {
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (!code || !currentUser) return;
+            if (!code) return showError("Моля въведете код!");
+
+            if (!currentUser) {
+                try {
+                    await signInAnonymously(auth);
+                    currentUser = auth.currentUser;
+                } catch (e) {
+                    showError("Свързването се забави. Опитайте пак.");
+                    return;
+                }
+            }
+
             const name = playerNameInput.value.trim() || 'Играч';
             localStorage.setItem('belote_name', name);
 
@@ -1112,7 +1137,7 @@
 
         function renderSeatSelectionView(room) {
             currentRoomSeats = room.seats || [null, null, null, null];
-            mySeatIndex = currentRoomSeats.findIndex(s => s && s.uid === currentUser.uid);
+            mySeatIndex = currentRoomSeats.findIndex(s => s && s.uid === (currentUser ? currentUser.uid : ''));
 
             [0, 1, 2, 3].forEach(seatIdx => {
                 const seatBtn = document.getElementById(`seat-btn-${seatIdx}`);
@@ -1122,7 +1147,7 @@
                 seatBtn.onclick = null;
 
                 if (player) {
-                    if (player.uid === currentUser.uid) {
+                    if (currentUser && player.uid === currentUser.uid) {
                         seatBtn.className = 'seat-card my-seat';
                         seatNameEl.textContent = `${player.name} (Ти)`;
                     } else {
@@ -1164,7 +1189,6 @@
             }
         }
 
-        // СТАРТИРАНЕ НА ИГРАТА В MULTIPLAYER
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1 || !currentRoomCode) return;
 
@@ -1418,9 +1442,7 @@
 
             let nextTurn = (roomData.currentTurn + 1) % 4;
 
-            // Логика за 4 Пазаса или 3 Пазаса след анонс
             if (passes === 4 && newContract === null) {
-                // Ново раздаване, ако всички кажат Пазас
                 initDeck();
                 let newDealer = (roomData.dealerIndex + 1) % 4;
                 let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
@@ -1445,7 +1467,6 @@
             }
 
             if (passes >= 3 && newContract !== null) {
-                // Раздаване на останалите 3 карти при одобрен анонс
                 let currentDeck = [...(roomData.deck || [])];
                 if (currentDeck.length < 12) {
                     initDeck();
@@ -1531,7 +1552,6 @@
 
                     let nextTurn = (currentTurn + 1) % 4;
 
-                    // 4 Пазаса - ново раздаване
                     if (passes === 4 && newContract === null) {
                         initDeck();
                         let newDealer = (roomData.dealerIndex + 1) % 4;
@@ -1556,7 +1576,6 @@
                         return;
                     }
 
-                    // 3 Пазаса след обявен коз -> Раздаване на останалите 3 карти
                     if (passes >= 3 && newContract !== null) {
                         let currentDeck = [...(roomData.deck || [])];
                         if (currentDeck.length < 12) {
@@ -1795,11 +1814,12 @@
             if (!isTrainingMode) return;
             const playerNames = ['Вие', 'Изток (Бот)', 'Север (Бот)', 'Запад (Бот)'];
             
+            // КОРИГИРАНИ АНОНСИ С ТЕКСТ И ИКОНА ЗА БОЯТА
             let displayBid = bid;
-            if (bid === '♣') displayBid = '♣ Скапия';
-            else if (bid === '♦') displayBid = '♦ Кало';
-            else if (bid === '♥') displayBid = '♥ Пука';
-            else if (bid === '♠') displayBid = '♠ Пипа';
+            if (bid === '♣') displayBid = 'Скапия ♣';
+            else if (bid === '♦') displayBid = 'Кало ♦';
+            else if (bid === '♥') displayBid = 'Пука ❤️';
+            else if (bid === '♠') displayBid = 'Пипа ♠';
             else if (bid === 'Под коньете') displayBid = 'Под коньете';
             else if (bid === 'На коньете') displayBid = 'На коньете';
             else if (bid === 'Пазас') displayBid = 'Пазас';
@@ -1854,7 +1874,7 @@
                         document.getElementById('current-game-indicator').classList.remove('hidden');
                         document.getElementById('current-game-indicator').classList.add('flex');
 
-                        waitingMsg.textContent = "Раздаване на останалите карти...";
+                        waitingMsg.textContent = "Раздаване на останалите 3 карти...";
                         dealRemainingCards();
                     }
                 }, 1500);
@@ -1877,6 +1897,7 @@
             
             sortPlayerHand();
             
+            // ВЪЗСТАНОВЕНА АНИМАЦИЯ ЗА 3-ТЕ КАРТИ
             animateDeal(3, dealOrder, () => {
                 if (!isTrainingMode) return;
                 gamePhase = 'playing';
@@ -1947,7 +1968,7 @@
             const ledSuit = trick[0].card.suit;
             const isAllTrumps = contract.includes('На коньете');
             const isNoTrumps = contract.includes('Под коньете');
-            const trumpSuit = (!isAllTrumps && !isNoTrumps) ? contract.charAt(0) : null;
+            const trumpSuit = (!isAllTrumps && !isNoTrumps) ? contract.charAt(contract.length - 1) : null;
             
             const hasLedSuit = hand.some(c => c.suit === ledSuit);
             const hasTrump = trumpSuit ? hand.some(c => c.suit === trumpSuit) : false;
@@ -2075,7 +2096,7 @@
 
             if (currentContract && !currentContract.includes('Под коньете')) {
                 const isAllTrumps = currentContract.includes('На коньете');
-                const trumpSuit = (!isAllTrumps) ? currentContract.charAt(0) : null;
+                const trumpSuit = (!isAllTrumps) ? currentContract.charAt(currentContract.length - 1) : null;
                 
                 let isValidBeloteSuit = true;
                 if (isAllTrumps && currentTrick.length > 0) {
@@ -2166,7 +2187,7 @@
             if (!contractStr) return 0;
             const isAllTrumps = contractStr.includes('На коньете');
             const isNoTrumps = contractStr.includes('Под коньете');
-            const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(0) : null;
+            const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(contractStr.length - 1) : null;
             
             const isTrumpHierarchy = isAllTrumps || (card.suit === contractSuit);
             
@@ -2181,7 +2202,7 @@
             if (!contractStr) return 0;
             const isAllTrumps = contractStr.includes('На коньете');
             const isNoTrumps = contractStr.includes('Под коньете');
-            const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(0) : null;
+            const contractSuit = (!isAllTrumps && !isNoTrumps) ? contractStr.charAt(contractStr.length - 1) : null;
             
             const isTrumpSuit = (!isAllTrumps && !isNoTrumps && card.suit === contractSuit);
             const isLedSuit = card.suit === ledSuit;
@@ -2269,7 +2290,7 @@
 
         function getDeclPower(d) {
             const isAllTrumps = currentContract && currentContract.includes('На коньете');
-            const trumpSuit = (currentContract && !isAllTrumps && !currentContract.includes('Под коньете')) ? currentContract.charAt(0) : null;
+            const trumpSuit = (currentContract && !isAllTrumps && !currentContract.includes('Под коньете')) ? currentContract.charAt(currentContract.length - 1) : null;
             const isTrump = d.suit === trumpSuit;
 
             if (d.isCarre) {
@@ -2429,21 +2450,41 @@
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
-            let endMsg = `Точки от това раздаване:<br>НИЕ: <strong>${usPoints}</strong> | ВИЕ: <strong>${themPoints}</strong>`;
-            
-            if (globalScore.us >= 151 && globalScore.us > globalScore.them) {
-                endMsg += `<br><br><span style="color: #4ade80; font-size: 1.2em;">ПОБЕДА ЗА ВАС!</span>`;
-                showModal("Край на играта", endMsg, leaveRoomAndReset);
-            } else if (globalScore.them >= 151 && globalScore.them > globalScore.us) {
-                endMsg += `<br><br><span style="color: #ef4444; font-size: 1.2em;">ЗАГУБА!</span>`;
-                showModal("Край на играта", endMsg, leaveRoomAndReset);
+            let summaryHtml = `
+                <div class="space-y-3 text-left">
+                    <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${currentContract} ${gameMultiplier > 1 ? '(x'+gameMultiplier+')' : ''}</p>
+                    <div class="flex justify-between text-slate-300">
+                        <span>Точки от ръце:</span>
+                        <span class="font-mono">Ние <b>${usCardPoints}</b> - Вие <b>${themCardPoints}</b></span>
+                    </div>
+                    <div class="flex justify-between text-slate-300">
+                        <span>Анонси/Белот:</span>
+                        <span class="font-mono">Ние <b>${declPoints.us}</b> - Вие <b>${declPoints.them}</b></span>
+                    </div>
+                    <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
+                        <p class="font-bold text-green-400 text-center">Точки за рунда: Ние +${usPoints} | Вие +${themPoints}</p>
+                    </div>
+                    <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
+                </div>
+            `;
+
+            if (globalScore.us >= 151 || globalScore.them >= 151) {
+                let winnerText = globalScore.us >= 151 ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
+                showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
+                    dealerIndex = (dealerIndex + 1) % 4;
+                    startTrainingGame();
+                });
             } else {
-                showModal("Резултат от раздаването", endMsg, () => {
+                showModal("Край на рунда", summaryHtml, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
                 });
             }
         }
+
+        window.addEventListener('load', () => {
+            initAuth();
+        });
     </script>
 </body>
 </html>
