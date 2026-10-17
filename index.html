@@ -417,17 +417,30 @@
                 z-index: 120; 
             }
 
+            /* ВЗЯТКАТА В СРЕДАТА (РАЗДАЛЕЧЕНИ КАРТИ) */
             #trick-area { 
-                width: 140px; 
-                height: 140px; 
+                width: 210px !important; 
+                height: 210px !important; 
             }
 
+            #trick-area .card {
+                width: 46px !important;
+                height: 68px !important;
+                font-size: 13px !important;
+                border-radius: 5px !important;
+            }
+
+            .trick-p0 { bottom: 0px !important; left: 50%; transform: translateX(-50%); z-index: 4; }
+            .trick-p1 { right: 0px !important; top: 50%; transform: translateY(-50%) rotate(-85deg); z-index: 1; }
+            .trick-p2 { top: 0px !important; left: 50%; transform: translateX(-50%); z-index: 2; }
+            .trick-p3 { left: 0px !important; top: 50%; transform: translateY(-50%) rotate(85deg); z-index: 3; }
+
             #contract-display {
-                top: 72% !important; 
-                font-size: 12px !important;
-                background: rgba(0, 0, 0, 0.75);
+                top: 80% !important; 
+                font-size: 11px !important;
+                background: rgba(0, 0, 0, 0.8);
                 border: 1px solid rgba(250, 204, 21, 0.4);
-                padding: 3px 12px;
+                padding: 2px 10px;
                 border-radius: 99px;
             }
 
