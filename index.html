@@ -1342,7 +1342,113 @@
                     currentRoomSeats = data.seats;
                     updateMultiplayerSeatNames(data.seats);
                 }
+
+                if (data && data.status === 'playing') {
+                    seatSelectView.style.display = 'none';
+                    gameView.style.display = 'flex';
+                    
+                    gamePhase = data.gamePhase;
+                    currentTurn = data.currentTurn;
+                    dealerIndex = data.dealerIndex;
+                    currentContract = data.currentContract;
+
+                    if (data.hands && mySeatIndex !== -1) {
+                        trainingHands[0] = data.hands[mySeatIndex] || [];
+                        renderPlayerHand();
+                    }
+
+                    updateTurnVisuals();
+                    updateDealerVisuals();
+
+                    if (data.gamePhase === 'bidding' && data.currentTurn === mySeatIndex) {
+                        biddingPanel.style.display = 'flex';
+                    } else {
+                        biddingPanel.style.display = 'none';
+                    }
+
+                    // Проверка дали на ред е бот
+                    checkAndTriggerBotTurn(data);
+                }
             }, (error) => console.error("Listen room error:", error));
+        }
+
+        async function checkAndTriggerBotTurn(roomData) {
+            if (roomData.status !== 'playing') return;
+            const activePlayerIndex = roomData.currentTurn;
+            const activeSeat = roomData.seats[activePlayerIndex];
+
+            // Проверка дали играчът на ред е бот
+            if (activeSeat && activeSeat.isBot) {
+                // Изпълняваме бота само ако текущият играч е първият реален играч в стаята
+                const firstHumanIndex = roomData.seats.findIndex(s => s && !s.isBot);
+                if (mySeatIndex === firstHumanIndex) {
+                    setTimeout(async () => {
+                        if (roomData.gamePhase === 'bidding') {
+                            await executeBotBiddingMultiplayer(roomData);
+                        } else if (roomData.gamePhase === 'playing') {
+                            await executeBotPlayMultiplayer(roomData);
+                        }
+                    }, 1200);
+                }
+            }
+        }
+
+        async function executeBotBiddingMultiplayer(roomData) {
+            const currentBidVal = roomData.currentContractRaw ? (bidHierarchy[roomData.currentContractRaw] || 0) : 0;
+            const possibleBids = Object.keys(bidHierarchy).filter(b => bidHierarchy[b] > currentBidVal);
+            let bid = "Пазас";
+
+            if (possibleBids.length > 0 && Math.random() > 0.8) {
+                bid = possibleBids[Math.floor(Math.random() * possibleBids.length)];
+            }
+
+            let newContract = roomData.currentContract;
+            let newContractRaw = roomData.currentContractRaw;
+            let passes = roomData.consecutivePasses || 0;
+
+            if (bid === 'Пазас') {
+                passes++;
+            } else {
+                newContract = bid;
+                newContractRaw = bid;
+                passes = 0;
+            }
+
+            let nextTurn = (roomData.currentTurn + 1) % 4;
+            let newPhase = 'bidding';
+
+            if (passes >= 3 && newContract !== null) {
+                newPhase = 'playing';
+            }
+
+            await updateDoc(getRoomPath(currentRoomCode), {
+                currentTurn: nextTurn,
+                currentContract: newContract,
+                currentContractRaw: newContractRaw,
+                consecutivePasses: passes,
+                gamePhase: newPhase
+            });
+        }
+
+        async function executeBotPlayMultiplayer(roomData) {
+            const botHand = roomData.hands[roomData.currentTurn] || [];
+            if (botHand.length === 0) return;
+
+            const validCards = getValidCards(botHand, roomData.currentTrick || [], roomData.currentContract || '');
+            const cardToPlay = validCards[Math.floor(Math.random() * validCards.length)];
+            
+            const updatedHand = botHand.filter(c => !(c.val === cardToPlay.val && c.suit === cardToPlay.suit));
+            const updatedHands = [...roomData.hands];
+            updatedHands[roomData.currentTurn] = updatedHand;
+
+            const updatedTrick = [...(roomData.currentTrick || []), { player: roomData.currentTurn, card: cardToPlay }];
+            let nextTurn = (roomData.currentTurn + 1) % 4;
+
+            await updateDoc(getRoomPath(currentRoomCode), {
+                hands: updatedHands,
+                currentTrick: updatedTrick,
+                currentTurn: updatedTrick.length === 4 ? roomData.currentTurn : nextTurn
+            });
         }
 
         document.getElementById('btn-training').addEventListener('click', () => {
