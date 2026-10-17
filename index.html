@@ -558,9 +558,9 @@
             </div>
         </div>
 
-        <div class="flex gap-3 justify-center">
+        <div class="flex flex-col gap-3 justify-center">
             <button id="btn-start-multiplayer" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
-                Влез на масата
+                🚀 Старт на играта (Свободните са Ботове)
             </button>
             <button id="btn-cancel-seat-select" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all">
                 Отказ
@@ -723,7 +723,6 @@
         let unsubscribeSeatSelect = null;
         let mySeatIndex = -1;
         let isTrainingMode = false;
-        let isStartingMultiplayer = false;
 
         // Local State
         let myHandCards = [];
@@ -977,7 +976,6 @@
             lastBidderIndex = -1;
             callerTeam = -1;
             mySeatIndex = -1;
-            isStartingMultiplayer = false;
 
             if (trickArea) trickArea.innerHTML = '';
             document.getElementById('my-hand').innerHTML = '';
@@ -1089,16 +1087,7 @@
                 const data = docSnap.data();
                 renderSeatSelectionView(data);
 
-                const filledSeats = (data.seats || []).filter(s => s !== null).length;
-
-                // 1. АКО В ИГРАТА ВЛЯЗАТ 4-МА: Host (seat 0) автоматично раздава карти в DB
-                if (filledSeats === 4 && data.status === 'waiting' && mySeatIndex === 0 && !isStartingMultiplayer) {
-                    isStartingMultiplayer = true;
-                    await startMultiplayerGameInDb(code);
-                    isStartingMultiplayer = false;
-                }
-
-                // 2. АКО СТАТУСЪТ Е 'playing', АВТОМАТИЧНО МИНАВАМЕ НА МАСАТА В ИГРАТА
+                // АКО СТАТУСЪТ Е 'playing', АВТОМАТИЧНО МИНАВАМЕ НА МАСАТА В ИГРАТА
                 if (data.status === 'playing' && mySeatIndex !== -1 && gameView.style.display !== 'flex') {
                     if (unsubscribeSeatSelect) {
                         unsubscribeSeatSelect();
@@ -1130,6 +1119,9 @@
                     if (player.uid === currentUser.uid) {
                         seatBtn.className = 'seat-card my-seat';
                         seatNameEl.textContent = `${player.name} (Ти)`;
+                    } else if (player.isBot) {
+                        seatBtn.className = 'seat-card occupied';
+                        seatNameEl.textContent = player.name;
                     } else {
                         seatBtn.className = 'seat-card occupied';
                         seatNameEl.textContent = player.name;
@@ -1144,7 +1136,6 @@
             document.getElementById('btn-start-multiplayer').disabled = (mySeatIndex === -1);
         }
 
-        // РЕШЕНИЕ ЗА RACECONDITION: Използване на runTransaction за избор на място
         async function selectSeat(targetSeatIndex) {
             if (!currentRoomCode || !currentUser) return;
             const name = playerNameInput.value.trim() || 'Играч';
@@ -1157,15 +1148,13 @@
 
                     let seats = roomDoc.data().seats || [null, null, null, null];
 
-                    // 1. Премахваме играча от старото му място (ако се мести)
                     const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
                     if (existingIndex !== -1) {
                         seats[existingIndex] = null;
                     }
 
-                    // 2. Проверяваме дали мястото е все още свободно
                     if (seats[targetSeatIndex] === null) {
-                        seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
+                        seats[targetSeatIndex] = { uid: currentUser.uid, name: name, isBot: false };
                         transaction.update(roomRef, { seats: seats });
                     } else {
                         throw "Мястото току-що бе заето от друг играч!";
@@ -1176,29 +1165,30 @@
             }
         }
 
+        // РЪЧЕН СТАРТ НА ИГРАТА (Свободните места стават БОТОВЕ)
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1) return;
             
-            seatSelectView.style.display = 'none';
-            gameView.style.display = 'flex';
-            document.getElementById('display-room-code').textContent = currentRoomCode;
-            document.getElementById('game-subtitle').textContent = 'Споделете този код с приятели';
+            const roomRef = getRoomPath(currentRoomCode);
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const docSnap = await transaction.get(roomRef);
+                    if (!docSnap.exists()) return;
+                    
+                    let seats = docSnap.data().seats || [null, null, null, null];
+                    let botCounter = 1;
+                    for (let i = 0; i < 4; i++) {
+                        if (!seats[i]) {
+                            seats[i] = { uid: `bot_${i}`, name: `Бот ${botCounter++}`, isBot: true };
+                        }
+                    }
+                    transaction.update(roomRef, { seats: seats });
+                });
 
-            updateMultiplayerSeatNames(currentRoomSeats);
-
-            const filledSeats = currentRoomSeats.filter(s => s !== null).length;
-            if (filledSeats === 4 && mySeatIndex === 0 && !isStartingMultiplayer) {
-                isStartingMultiplayer = true;
                 await startMultiplayerGameInDb(currentRoomCode);
-                isStartingMultiplayer = false;
+            } catch(e) {
+                console.error("Error starting game:", e);
             }
-
-            if (unsubscribeSeatSelect) {
-                unsubscribeSeatSelect();
-                unsubscribeSeatSelect = null;
-            }
-
-            listenToRoom(currentRoomCode);
         });
 
         function updateMultiplayerSeatNames(seats) {
@@ -1255,7 +1245,6 @@
             gameView.style.display = 'none';
         }
 
-        // Автоматично излизане при затваряне/презареждане на таба
         window.addEventListener('beforeunload', () => {
             if (currentRoomCode && mySeatIndex !== -1 && currentUser) {
                 leaveRoomAndReset();
@@ -1277,13 +1266,6 @@
                 if (data && data.seats) {
                     currentRoomSeats = data.seats;
                     updateMultiplayerSeatNames(data.seats);
-                    
-                    const filledSeats = data.seats.filter(s => s !== null).length;
-                    if (filledSeats < 4) {
-                        waitingMsg.textContent = `Изчакваме 4 играчи (${filledSeats}/4)...`;
-                    } else if (data.gamePhase === 'bidding') {
-                        waitingMsg.textContent = "";
-                    }
 
                     if (data.status === 'playing') {
                         syncMultiplayerGameState(data);
@@ -1358,6 +1340,16 @@
             updateDealerVisuals();
             updateTurnVisuals();
 
+            // Автоматичен контрол на БОТОВЕТЕ, ако е техен ред в онлайн стаята
+            const currentPlayerObj = currentRoomSeats[currentTurn];
+            if (currentPlayerObj && currentPlayerObj.isBot && mySeatIndex === 0) {
+                if (gamePhase === 'bidding') {
+                    setTimeout(() => processAiMultiplayerBid(currentTurn), 1200);
+                } else if (gamePhase === 'playing' && data.currentTrick && data.currentTrick.length < 4) {
+                    setTimeout(() => processAiMultiplayerPlay(currentTurn, data), 1200);
+                }
+            }
+
             if (gamePhase === 'bidding') {
                 waitingMsg.textContent = "";
                 if (currentTurn === mySeatIndex) {
@@ -1373,6 +1365,40 @@
                     renderTrickArea();
                 }
             }
+        }
+
+        async function processAiMultiplayerBid(botTurnIndex) {
+            const currentBidVal = currentContractRaw ? (bidHierarchy[currentContractRaw] || 0) : 0;
+            const possibleBids = Object.keys(bidHierarchy).filter(b => bidHierarchy[b] > currentBidVal);
+            let bid = "Пазас";
+            if (possibleBids.length > 0 && Math.random() > 0.8) {
+                bid = possibleBids[Math.floor(Math.random() * possibleBids.length)];
+            }
+            await processMultiplayerBidInDb(botTurnIndex, bid);
+        }
+
+        async function processAiMultiplayerPlay(botTurnIndex, data) {
+            const hand = data.hands[botTurnIndex];
+            if (!hand || hand.length === 0) return;
+            const validCards = getValidCards(hand, data.currentTrick || [], currentContract);
+            const randomValidCard = validCards[Math.floor(Math.random() * validCards.length)];
+            const cardIndex = hand.indexOf(randomValidCard);
+            
+            let roomRef = getRoomPath(currentRoomCode);
+            hand.splice(cardIndex, 1);
+            let newTrick = [...(data.currentTrick || []), { player: botTurnIndex, card: randomValidCard }];
+
+            let updates = {
+                hands: data.hands,
+                currentTrick: newTrick
+            };
+
+            if (newTrick.length === 4) {
+                updates.currentTurn = -1;
+            } else {
+                updates.currentTurn = (botTurnIndex + 1) % 4;
+            }
+            await updateDoc(roomRef, updates);
         }
 
         /* ------------------------------------------------------------------ */
