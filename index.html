@@ -791,40 +791,42 @@
         }
         
         async function recordWinner(playerUid, playerName, winPoints = 1) {
-            let activeUid = playerUid || (auth.currentUser ? auth.currentUser.uid : null);
+            const nameToSave = playerName || localStorage.getItem('belote_name') || 'Играч';
+            const weekKey = getWeekKey();
             
-            if (!activeUid) {
-                try {
+            // 1. Локален запис (гарантиран 100% достъп)
+            try {
+                let localWins = parseInt(localStorage.getItem(`belote_wins_${weekKey}`) || '0');
+                localWins += winPoints;
+                localStorage.setItem(`belote_wins_${weekKey}`, localWins.toString());
+            } catch (e) { console.error("Local storage error", e); }
+            
+            // 2. Запис във Firebase
+            try {
+                let activeUid = playerUid || (auth.currentUser ? auth.currentUser.uid : null);
+                if (!activeUid) {
                     const cred = await signInAnonymously(auth);
                     activeUid = cred.user.uid;
-                } catch (e) {
-                    console.error("Грешка при автентикация за класация:", e);
-                    return;
                 }
-            }
-            
-            if (!activeUid || activeUid.startsWith('bot_')) return;
-            
-            const weekKey = getWeekKey();
-            const leaderboardRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players', activeUid);
-            
-            try {
-                const snap = await getDoc(leaderboardRef);
-                const nameToSave = playerName || localStorage.getItem('belote_name') || 'Играч';
                 
-                if (snap.exists()) {
-                    await updateDoc(leaderboardRef, {
-                        wins: (snap.data().wins || 0) + winPoints,
-                        name: nameToSave
-                    });
-                } else {
-                    await setDoc(leaderboardRef, {
-                        name: nameToSave,
-                        wins: winPoints
-                    });
+                if (activeUid && !activeUid.startsWith('bot_')) {
+                    const leaderboardRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players', activeUid);
+                    const snap = await getDoc(leaderboardRef);
+                    
+                    if (snap.exists()) {
+                        await updateDoc(leaderboardRef, {
+                            wins: (snap.data().wins || 0) + winPoints,
+                            name: nameToSave
+                        });
+                    } else {
+                        await setDoc(leaderboardRef, {
+                            name: nameToSave,
+                            wins: winPoints
+                        });
+                    }
                 }
             } catch (e) {
-                console.error("Грешка при запис в базата данни:", e);
+                console.error("Грешка при онлайн запис:", e);
             }
         }
         
@@ -836,58 +838,64 @@
             listEl.innerHTML = '<div class="text-center text-slate-400 py-4">Зареждане на класирането...</div>';
             
             const weekKey = getWeekKey();
-            const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players');
+            const myName = localStorage.getItem('belote_name') || 'Аз';
+            const myLocalWins = parseInt(localStorage.getItem(`belote_wins_${weekKey}`) || '0');
             
+            let playersMap = {};
+            
+            // Зареждане от Firebase
             try {
+                const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players');
                 const baseSnap = await getDocs(playersCol);
-                
-                if (baseSnap.empty) {
-                    listEl.innerHTML = `
-                        <div class="text-center py-6 bg-black/20 rounded-xl border border-white/5">
-                            <p class="text-slate-300 font-medium mb-1">Все още няма победи за тази седмица!</p>
-                            <p class="text-xs text-green-400">Спечели игра на Тренировка (+1т.) или Мултиплейър (+2т.) и стани №1 🚀</p>
-                        </div>`;
-                    return;
-                }
-                
-                let playersList = [];
                 baseSnap.forEach(docSnap => {
-                    playersList.push({ id: docSnap.id, ...docSnap.data() });
-                });
-                
-                playersList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
-                playersList = playersList.slice(0, 10);
-                
-                listEl.innerHTML = '';
-                
-                let rank = 1;
-                playersList.forEach(data => {
-                    let medal = `#${rank}`;
-                    let bgStyle = 'bg-black/20 border-white/5';
-                    if (rank === 1) { medal = '🥇'; bgStyle = 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'; }
-                    else if (rank === 2) { medal = '🥈'; bgStyle = 'bg-slate-400/20 border-slate-400/40 text-slate-200'; }
-                    else if (rank === 3) { medal = '🥉'; bgStyle = 'bg-amber-700/20 border-amber-600/40 text-amber-300'; }
-                    
-                    const item = document.createElement('div');
-                    item.className = `flex justify-between items-center p-3 rounded-xl border ${bgStyle} transition-all`;
-                    item.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <span class="font-black text-lg w-6 text-center">${medal}</span>
-                            <span class="font-bold text-sm md:text-base">${data.name || 'Анонимен'}</span>
-                        </div>
-                        <span class="font-black text-emerald-400 text-sm md:text-base">${data.wins} ${data.wins === 1 ? 'победа' : 'победи'}</span>
-                    `;
-                    listEl.appendChild(item);
-                    rank++;
+                    const data = docSnap.data();
+                    playersMap[docSnap.id] = { name: data.name || 'Анонимен', wins: data.wins || 0 };
                 });
             } catch (err) {
-                console.error(err);
-                listEl.innerHTML = `
-                    <div class="text-center py-6 bg-black/20 rounded-xl border border-white/5">
-                        <p class="text-slate-300 font-medium mb-1">Все още няма победи за тази седмица!</p>
-                        <p class="text-xs text-green-400">Спечели игра и стани №1 🚀</p>
-                    </div>`;
+                console.warn("Онлайн класацията не може да се зареди, използва се локална:", err);
             }
+            
+            // Ако играчът има локални победи, гарантираме показването му
+            const myUid = auth.currentUser ? auth.currentUser.uid : 'my_local_id';
+            if (myLocalWins > 0) {
+                if (!playersMap[myUid] || playersMap[myUid].wins < myLocalWins) {
+                    playersMap[myUid] = { name: myName, wins: myLocalWins };
+                }
+            }
+            
+            let playersList = Object.values(playersMap);
+            playersList.sort((a, b) => b.wins - a.wins);
+            
+            if (playersList.length === 0) {
+                listEl.innerHTML = `
+            <div class="text-center py-6 bg-black/20 rounded-xl border border-white/5">
+                <p class="text-slate-300 font-medium mb-1">Все още няма победи за тази седмица!</p>
+                <p class="text-xs text-green-400">Спечели игра на Тренировка (+1т.) или Мултиплейър (+2т.) и стани №1 🚀</p>
+            </div>`;
+                return;
+            }
+            
+            listEl.innerHTML = '';
+            let rank = 1;
+            playersList.forEach(data => {
+                let medal = `#${rank}`;
+                let bgStyle = 'bg-black/20 border-white/5';
+                if (rank === 1) { medal = '🥇'; bgStyle = 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'; }
+                else if (rank === 2) { medal = '🥈'; bgStyle = 'bg-slate-400/20 border-slate-400/40 text-slate-200'; }
+                else if (rank === 3) { medal = '🥉'; bgStyle = 'bg-amber-700/20 border-amber-600/40 text-amber-300'; }
+                
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center p-3 rounded-xl border ${bgStyle} transition-all`;
+                item.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="font-black text-lg w-6 text-center">${medal}</span>
+                <span class="font-bold text-sm md:text-base">${data.name}</span>
+            </div>
+            <span class="font-black text-emerald-400 text-sm md:text-base">${data.wins} ${data.wins === 1 ? 'победа' : 'победи'}</span>
+        `;
+                listEl.appendChild(item);
+                rank++;
+            });
         }
         
         document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
@@ -2982,7 +2990,7 @@
                 
                 if (isWinner) {
                     const name = playerNameInput.value.trim() || localStorage.getItem('belote_name') || 'Играч';
-                    recordWinner(auth.currentUser ? auth.currentUser.uid : null, name, 1);
+                    await recordWinner(auth.currentUser ? auth.currentUser.uid : null, name, 1);
                 }
                 
                 showGameOverModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
