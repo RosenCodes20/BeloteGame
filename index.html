@@ -907,7 +907,7 @@
             if (pendingBeloteCardIndex !== -1) {
                 const idx = pendingBeloteCardIndex;
                 pendingBeloteCardIndex = -1;
-                playCard(0, idx, true);
+                playCard(isTrainingMode ? 0 : mySeatIndex, idx, true);
             }
         });
 
@@ -918,7 +918,7 @@
             if (pendingBeloteCardIndex !== -1) {
                 const idx = pendingBeloteCardIndex;
                 pendingBeloteCardIndex = -1;
-                playCard(0, idx, false);
+                playCard(isTrainingMode ? 0 : mySeatIndex, idx, false);
             }
         });
 
@@ -1814,7 +1814,6 @@
             if (!isTrainingMode) return;
             const playerNames = ['Вие', 'Изток (Бот)', 'Север (Бот)', 'Запад (Бот)'];
             
-            // КОРИГИРАНИ АНОНСИ С ТЕКСТ И ИКОНА ЗА БОЯТА
             let displayBid = bid;
             if (bid === '♣') displayBid = 'Скапия ♣';
             else if (bid === '♦') displayBid = 'Кало ♦';
@@ -1897,7 +1896,6 @@
             
             sortPlayerHand();
             
-            // ВЪЗСТАНОВЕНА АНИМАЦИЯ ЗА 3-ТЕ КАРТИ
             animateDeal(3, dealOrder, () => {
                 if (!isTrainingMode) return;
                 gamePhase = 'playing';
@@ -2027,7 +2025,7 @@
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
             
-            const hand = trainingHands[0];
+            const hand = isTrainingMode ? trainingHands[0] : (trainingHands[mySeatIndex] || []);
             let validCards = [];
             
             let isMyTurnToPlay = isTrainingMode ? (gamePhase === 'playing' && currentTurn === 0) : (gamePhase === 'playing' && currentTurn === mySeatIndex);
@@ -2062,25 +2060,9 @@
                                     <div class="text-[0.8em] font-bold absolute bottom-1 right-1.5 leading-none transform rotate-180">${card.val}</div>`;
                 
                 if (isMyTurnToPlay && isValid) {
-                    const liftAmount = isMobile ? 20 : 25;
-                    
-                    const handleHoverIn = () => {
-                        cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY - liftAmount}px) scale(1.05)`;
-                        cardEl.style.zIndex = 99;
-                    };
-                    const handleHoverOut = () => {
-                        cardEl.style.transform = `rotate(${rotate}deg) translateY(${translateY}px) scale(1)`;
-                        cardEl.style.zIndex = index;
-                    };
-
-                    cardEl.addEventListener('mouseenter', handleHoverIn);
-                    cardEl.addEventListener('mouseleave', handleHoverOut);
-                    cardEl.addEventListener('touchstart', handleHoverIn, { passive: true });
-                    cardEl.addEventListener('touchend', handleHoverOut, { passive: true });
-                    
                     cardEl.addEventListener('click', () => {
                         if (gamePhase === 'playing' && isMyTurnToPlay && currentTrick.length < 4) {
-                            playCard(0, index);
+                            playCard(isTrainingMode ? 0 : mySeatIndex, index);
                         }
                     });
                 }
@@ -2089,69 +2071,91 @@
             });
         }
 
-        function playCard(playerIndex, cardIndex, forceDeclareBelote = null) {
-            if (!isTrainingMode) return;
-            const playedCard = trainingHands[playerIndex][cardIndex];
-            let isBeloteSituation = false;
+        async function playCard(playerIndex, cardIndex, forceDeclareBelote = null) {
+            if (isTrainingMode) {
+                const playedCard = trainingHands[playerIndex][cardIndex];
+                let isBeloteSituation = false;
 
-            if (currentContract && !currentContract.includes('Под коньете')) {
-                const isAllTrumps = currentContract.includes('На коньете');
-                const trumpSuit = (!isAllTrumps) ? currentContract.charAt(currentContract.length - 1) : null;
-                
-                let isValidBeloteSuit = true;
-                if (isAllTrumps && currentTrick.length > 0) {
-                    const ledSuit = currentTrick[0].card.suit;
-                    if (playedCard.suit !== ledSuit) {
-                        isValidBeloteSuit = false;
-                    }
-                }
-
-                if (isValidBeloteSuit && (playedCard.val === 'K' || playedCard.val === 'Q')) {
-                    const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
+                if (currentContract && !currentContract.includes('Под коньете')) {
+                    const isAllTrumps = currentContract.includes('На коньете');
+                    const trumpSuit = (!isAllTrumps) ? currentContract.charAt(currentContract.length - 1) : null;
                     
-                    if (isTrumpCard) {
-                        const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
-                        const hasOther = trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
-                        if (hasOther) isBeloteSituation = true;
+                    let isValidBeloteSuit = true;
+                    if (isAllTrumps && currentTrick.length > 0) {
+                        const ledSuit = currentTrick[0].card.suit;
+                        if (playedCard.suit !== ledSuit) {
+                            isValidBeloteSuit = false;
+                        }
+                    }
+
+                    if (isValidBeloteSuit && (playedCard.val === 'K' || playedCard.val === 'Q')) {
+                        const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
+                        
+                        if (isTrumpCard) {
+                            const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
+                            const hasOther = trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
+                            if (hasOther) isBeloteSituation = true;
+                        }
                     }
                 }
-            }
 
-            if (isBeloteSituation && playerIndex === 0 && forceDeclareBelote === null) {
-                showBeloteModal(cardIndex);
-                return;
-            }
+                if (isBeloteSituation && playerIndex === 0 && forceDeclareBelote === null) {
+                    showBeloteModal(cardIndex);
+                    return;
+                }
 
-            let declareBelote = false;
-            if (isBeloteSituation) {
-                declareBelote = (playerIndex === 0) ? (forceDeclareBelote === true) : true;
-            }
+                let declareBelote = false;
+                if (isBeloteSituation) {
+                    declareBelote = (playerIndex === 0) ? (forceDeclareBelote === true) : true;
+                }
 
-            if (declareBelote) {
-                if (playerIndex % 2 === 0) belotePointsRound.us += 20;
-                else belotePointsRound.them += 20;
+                if (declareBelote) {
+                    if (playerIndex % 2 === 0) belotePointsRound.us += 20;
+                    else belotePointsRound.them += 20;
 
-                showSpeechBubble(playerIndex, 'Белот');
-            }
+                    showSpeechBubble(playerIndex, 'Белот');
+                }
 
-            if (isFirstTrick && playerIndex !== 0) {
-                processAiDeclarations(playerIndex);
-            }
+                if (isFirstTrick && playerIndex !== 0) {
+                    processAiDeclarations(playerIndex);
+                }
 
-            trainingHands[playerIndex].splice(cardIndex, 1);
-            currentTrick.push({ player: playerIndex, card: playedCard });
-            
-            renderTrickArea();
-            if (playerIndex === 0) renderPlayerHand();
+                trainingHands[playerIndex].splice(cardIndex, 1);
+                currentTrick.push({ player: playerIndex, card: playedCard });
+                
+                renderTrickArea();
+                if (playerIndex === 0) renderPlayerHand();
 
-            if (currentTrick.length === 4) {
-                currentTurn = -1;
-                updateTurnVisuals();
-                aiTimeout = setTimeout(resolveTrick, 1800);
-            } else {
-                currentTurn = (currentTurn + 1) % 4;
-                updateTurnVisuals();
-                handlePlayTurn();
+                if (currentTrick.length === 4) {
+                    currentTurn = -1;
+                    updateTurnVisuals();
+                    aiTimeout = setTimeout(resolveTrick, 1800);
+                } else {
+                    currentTurn = (currentTurn + 1) % 4;
+                    updateTurnVisuals();
+                    handlePlayTurn();
+                }
+            } else if (currentRoomCode) {
+                // МУЛТИПЛЕЙЪР ДАВАНЕ НА КАРТА КЪМ FIREBASE
+                const roomRef = getRoomPath(currentRoomCode);
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) return;
+                const roomData = docSnap.data();
+
+                const myHand = roomData.hands[`hand_${mySeatIndex}`] || [];
+                const playedCard = myHand[cardIndex];
+                if (!playedCard) return;
+
+                const updatedHand = myHand.filter((_, idx) => idx !== cardIndex);
+                
+                let updatePayload = {};
+                updatePayload[`hands.hand_${mySeatIndex}`] = updatedHand;
+                updatePayload['currentTrick'] = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
+                
+                let nextTurn = (mySeatIndex + 1) % 4;
+                updatePayload['currentTurn'] = updatePayload['currentTrick'].length === 4 ? mySeatIndex : nextTurn;
+
+                await updateDoc(roomRef, updatePayload);
             }
         }
 
@@ -2357,92 +2361,8 @@
             let usRaw = usCardPoints + declPoints.us;
             let themRaw = themCardPoints + declPoints.them;
 
-            let isCallerUs = (callerTeam === 0);
-            let usPoints = 0;
-            let themPoints = 0;
-
-            function calculateBelotePoints(raw1, raw2, isAllTrumps) {
-                if (raw1 + raw2 === 0) return [0, 0];
-                
-                let p1 = Math.floor(raw1 / 10);
-                let p2 = Math.floor(raw2 / 10);
-                
-                let rem1 = raw1 % 10;
-                let rem2 = raw2 % 10;
-
-                if (isAllTrumps) {
-                    if (rem1 > 5) p1++;
-                    if (rem2 > 5) p2++;
-
-                    if (rem1 === 4 || rem1 === 5) {
-                        if (raw1 <= raw2) p1++; else p1++;
-                    }
-                    if (rem2 === 4 || rem2 === 5) {
-                        if (raw2 < raw1) p2++; else p2++;
-                    }
-                } else {
-                    if (rem1 > 5) p1++;
-                    if (rem2 > 5) p2++;
-
-                    if (rem1 === 5 && rem2 === 7) {
-                    } else if (rem2 === 5 && rem1 === 7) {
-                    } else if (rem1 === 5 && rem2 === 5) {
-                        if (raw1 < raw2) p1++; else p2++;
-                    }
-                }
-
-                return [p1, p2];
-            }
-
-            const isAllTrumpsContract = currentContract && currentContract.includes('На коньете');
-            let [baseUsPoints, baseThemPoints] = calculateBelotePoints(usRaw, themRaw, isAllTrumpsContract);
-            let baseTotalPoints = baseUsPoints + baseThemPoints;
-
-            if (gameMultiplier > 1) {
-                const multipliedTotal = baseTotalPoints * gameMultiplier;
-                
-                if (isCallerUs) {
-                    if (usRaw > themRaw) {
-                        usPoints = multipliedTotal;
-                        themPoints = 0;
-                    } else {
-                        usPoints = 0;
-                        themPoints = multipliedTotal;
-                    }
-                } else {
-                    if (themRaw > usRaw) {
-                        usPoints = 0;
-                        themPoints = multipliedTotal;
-                    } else {
-                        usPoints = multipliedTotal;
-                        themPoints = 0;
-                    }
-                }
-            } else {
-                if (isCallerUs) {
-                    if (usRaw > themRaw) { 
-                        usPoints = baseUsPoints;
-                        themPoints = baseThemPoints;
-                    } else if (usRaw === themRaw) { 
-                        usPoints = 0;
-                        themPoints = baseThemPoints; 
-                    } else { 
-                        usPoints = 0;
-                        themPoints = baseTotalPoints;
-                    }
-                } else {
-                    if (themRaw > usRaw) { 
-                        usPoints = baseUsPoints;
-                        themPoints = baseThemPoints;
-                    } else if (themRaw === usRaw) {
-                        usPoints = baseUsPoints;
-                        themPoints = 0;
-                    } else { 
-                        usPoints = baseTotalPoints;
-                        themPoints = 0;
-                    }
-                }
-            }
+            let usPoints = Math.round(usRaw / 10);
+            let themPoints = Math.round(themRaw / 10);
 
             globalScore.us += usPoints;
             globalScore.them += themPoints;
