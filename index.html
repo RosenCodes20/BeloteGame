@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="gemini-svg.svg">
-
+    
     <title>Белот Онлайн - Мултиплейър и Класация</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -17,7 +17,7 @@
             height: 100dvh;
             width: 100vw;
         }
-
+        
         .glass-panel {
             background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(12px);
@@ -37,22 +37,22 @@
             box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
             outline: none;
         }
-
+        
         .poker-table {
             background: radial-gradient(circle, #227042 0%, #0c331a 100%);
             border: 14px solid #3d2314;
             border-radius: 9999px;
             box-shadow: 
-                0 0 0 3px #1a0e08, 
-                inset 0 0 0 3px #d4af37, 
-                inset 0 0 40px rgba(0,0,0,0.8), 
-                0 25px 50px -12px rgba(0,0,0,0.7);
+            0 0 0 3px #1a0e08, 
+            inset 0 0 0 3px #d4af37, 
+            inset 0 0 40px rgba(0,0,0,0.8), 
+            0 25px 50px -12px rgba(0,0,0,0.7);
             position: relative;
             width: min(85vw, 850px);
             height: min(50vh, 600px);
             margin: auto;
         }
-
+        
         .seat {
             position: absolute;
             min-width: 100px;
@@ -67,12 +67,12 @@
             z-index: 10;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-
+        
         .seat-bottom { bottom: -25px; left: 50%; transform: translate(-50%, 0); z-index: 50; }
         .seat-top { top: -25px; left: 50%; transform: translate(-50%, -100%); z-index: 50; }
         .seat-left { top: 50%; left: 15px; transform: translate(0, -50%); z-index: 50; }
         .seat-right { top: 50%; right: 15px; transform: translate(0, -50%); z-index: 50; }
-
+        
         .card {
             width: min(15vw, 75px);
             height: min(22.5vw, 112px);
@@ -99,23 +99,23 @@
             border: 2px solid #4ade80;
             box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
         }
-
+        
         .card.playable:hover, .card.playable:active {
             transform: translateY(-30px) scale(1.1) !important;
             box-shadow: 0 18px 30px rgba(0,0,0,0.6), 0 0 20px rgba(74,222,128,0.8);
             border: 2px solid #22c55e;
             z-index: 200 !important;
         }
-
+        
         .invalid-card {
             opacity: 0.45;
             pointer-events: none;
             filter: grayscale(60%) brightness(0.75);
         }
-
+        
         .red-suit { color: #dc2626; }
         .black-suit { color: #0f172a; }
-
+        
         .hand-container {
             position: absolute;
             bottom: 5px;
@@ -130,13 +130,13 @@
             align-items: flex-end;
             pointer-events: none;
         }
-
+        
         .hand-container .card {
             pointer-events: auto;
         }
-
+        
         #game-view { display: none; }
-
+        
         #trick-area {
             position: absolute;
             top: 50%;
@@ -158,7 +158,7 @@
         .trick-p1 { right: 10px; top: 50%; transform: translateY(-50%) rotate(-85deg); z-index: 1; }
         .trick-p2 { top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; }
         .trick-p3 { left: 10px; top: 50%; transform: translateY(-50%) rotate(85deg); z-index: 3; }
-
+        
         .speech-bubble {
             position: absolute;
             background: rgba(255, 255, 255, 0.95);
@@ -187,7 +187,7 @@
         
         .seat-right .speech-bubble { top: 50%; right: 100%; transform: translateY(-50%); margin-right: 12px; }
         .seat-right .speech-bubble::after { right: -11px; top: 50%; transform: translateY(-50%); border-color: transparent transparent transparent rgba(255, 255, 255, 0.95); }
-
+        
         #bidding-panel {
             position: absolute;
             bottom: 130px;
@@ -206,7 +206,7 @@
             border: 1px solid rgba(74, 222, 128, 0.3);
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
         }
-
+        
         .bid-btn {
             background: rgba(30, 41, 59, 0.8);
             color: white;
@@ -235,7 +235,7 @@
         
         .bid-btn.rekontra { background: rgba(109, 40, 217, 0.8); border-color: #8b5cf6; }
         .bid-btn.rekontra:hover { background: rgba(124, 58, 237, 1); }
-
+        
         .dealer-badge {
             position: absolute;
             top: -8px;
@@ -255,7 +255,7 @@
             z-index: 20;
             display: none;
         }
-
+        
         .seat-card {
             background: rgba(30, 41, 59, 0.5);
             border: 2px dashed rgba(148, 163, 184, 0.4);
@@ -280,7 +280,7 @@
             background: rgba(29, 78, 216, 0.3);
             box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
-
+        
         .dealing-anim {
             position: absolute;
             top: 50%;
@@ -295,17 +295,17 @@
             z-index: 50;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-
+        
         @keyframes throwCard0 { from { transform: translate(-50%, 180px) scale(0.3); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
         @keyframes throwCard1 { from { transform: translate(180px, -50%) scale(0.3); opacity: 0; } to { transform: translateY(-50%) rotate(-85deg) scale(1); opacity: 1; } }
         @keyframes throwCard2 { from { transform: translate(-50%, -180px) scale(0.3); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
         @keyframes throwCard3 { from { transform: translate(-180px, -50%) scale(0.3); opacity: 0; } to { transform: translateY(-50%) rotate(85deg) scale(1); opacity: 1; } }
-
+        
         .anim-throw-0 { animation: throwCard0 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .anim-throw-1 { animation: throwCard1 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .anim-throw-2 { animation: throwCard2 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .anim-throw-3 { animation: throwCard3 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-
+        
         #custom-modal { display: none; }
         
         .modal-content {
@@ -315,14 +315,14 @@
             0% { transform: scale(0.8); opacity: 0; } 
             100% { transform: scale(1); opacity: 1; } 
         }
-
+        
         @media (max-width: 640px) {
             body {
                 padding: 0;
                 overflow: hidden;
                 overscroll-behavior-y: none; 
             }
-
+            
             .top-bar-container {
                 position: absolute !important;
                 top: calc(env(safe-area-inset-top, 8px) + 50px) !important;
@@ -331,7 +331,7 @@
                 margin-top: 0 !important;
                 z-index: 45;
             }
-
+            
             #scoreboard {
                 top: calc(env(safe-area-inset-top, 8px) + 55px) !important;
                 left: 10px !important;
@@ -342,7 +342,7 @@
                 border-radius: 12px;
             }
             #scoreboard .text-2xl { font-size: 1.1rem !important; }
-
+            
             #current-game-indicator {
                 top: env(safe-area-inset-top, 8px) !important;
                 right: 10px !important;
@@ -352,7 +352,7 @@
                 background: rgba(15, 23, 42, 0.92);
                 z-index: 60;
             }
-
+            
             #game-log-bar { 
                 top: calc(env(safe-area-inset-top, 8px) + 115px) !important; 
                 font-size: 11px !important; 
@@ -360,7 +360,7 @@
                 background: rgba(0, 0, 0, 0.85);
                 z-index: 40;
             }
-
+            
             .poker-table {
                 width: 90vw; 
                 height: 44vh;
@@ -369,7 +369,7 @@
                 position: relative;
                 box-shadow: 0 0 0 2px #1a0e08, inset 0 0 0 2px #d4af37, inset 0 0 30px rgba(0,0,0,0.8), 0 15px 30px -10px rgba(0,0,0,0.8);
             }
-
+            
             .seat {
                 min-width: 65px;
                 padding: 3px 8px;
@@ -388,7 +388,7 @@
                 transform: translate(-50%, 0); 
                 z-index: 35; 
             }
-
+            
             .hand-container {
                 position: fixed !important;
                 bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
@@ -398,7 +398,7 @@
                 width: 100vw;
                 padding: 0;
             }
-
+            
             .card {
                 width: 58px;
                 height: 85px;
@@ -407,35 +407,35 @@
                 border-radius: 6px;
                 box-shadow: -2px 4px 10px rgba(0,0,0,0.6);
             }
-
+            
             .card.playable:hover, .card.playable:active {
                 transform: translateY(-28px) scale(1.15) !important;
             }
-
+            
             .seat-bottom .speech-bubble { 
                 top: -42px !important; 
                 left: 50%; 
                 transform: translateX(-50%); 
                 z-index: 120; 
             }
-
+            
             #trick-area { 
                 width: 210px !important; 
                 height: 210px !important; 
             }
-
+            
             #trick-area .card {
                 width: 46px !important;
                 height: 68px !important;
                 font-size: 13px !important;
                 border-radius: 5px !important;
             }
-
+            
             .trick-p0 { bottom: 0px !important; left: 50%; transform: translateX(-50%); z-index: 4; }
             .trick-p1 { right: 0px !important; top: 50%; transform: translateY(-50%) rotate(-85deg); z-index: 1; }
             .trick-p2 { top: 0px !important; left: 50%; transform: translateX(-50%); z-index: 2; }
             .trick-p3 { left: 0px !important; top: 50%; transform: translateY(-50%) rotate(85deg); z-index: 3; }
-
+            
             #contract-display {
                 top: 80% !important; 
                 font-size: 11px !important;
@@ -444,7 +444,7 @@
                 padding: 2px 10px;
                 border-radius: 99px;
             }
-
+            
             #bidding-panel { 
                 bottom: calc(100px + env(safe-area-inset-bottom, 0px)); 
                 gap: 6px; 
@@ -455,18 +455,18 @@
                 background: rgba(15, 23, 42, 0.95);
                 z-index: 120;
             }
-
+            
             .bid-btn { 
                 padding: 8px 6px; 
                 font-size: 12px; 
                 border-radius: 8px;
             }
-
+            
             .speech-bubble { 
                 font-size: 11px; 
                 padding: 4px 8px; 
             }
-
+            
             .dealer-badge { 
                 width: 18px; 
                 height: 18px; 
@@ -478,7 +478,7 @@
     </style>
 </head>
 <body class="h-screen w-screen flex items-center justify-center relative bg-gray-900 text-white">
-
+    
     <div id="lobby-view" class="glass-panel p-8 rounded-2xl w-full max-w-md text-center mx-4">
         <div class="mb-6">
             <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-300 drop-shadow-sm mb-2">Белот</h1>
@@ -488,25 +488,25 @@
         <div class="mb-5">
             <input type="text" id="player-name" placeholder="Твоето име" class="glass-input w-full p-4 rounded-xl text-white text-lg placeholder-gray-400">
         </div>
-
+        
         <button id="btn-leaderboard" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-white font-bold py-3 px-4 rounded-xl mb-4 transition-all shadow-lg hover:shadow-yellow-500/30 flex items-center justify-center gap-2">
             🏆 Седмична Класация
         </button>
-
+        
         <button id="btn-training" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl mb-6 transition-all shadow-lg hover:shadow-indigo-500/30">
             Тренировка (Срещу Ботове)
         </button>
-
+        
         <div class="flex items-center justify-between mb-6 opacity-70">
             <hr class="w-1/3 border-slate-500">
             <span class="text-slate-300 font-medium text-sm px-2">МУЛТИПЛЕЙЪР</span>
             <hr class="w-1/3 border-slate-500">
         </div>
-
+        
         <button id="btn-create" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold py-3.5 px-4 rounded-xl mb-4 transition-all shadow-lg hover:shadow-green-500/30">
             Създай онлайн стая
         </button>
-
+        
         <div class="flex space-x-3 mb-2">
             <input type="text" id="room-code-input" placeholder="Код на стая" class="glass-input w-2/3 p-3 rounded-xl text-white text-lg uppercase text-center placeholder-gray-400 font-mono tracking-wider">
             <button id="btn-join" class="w-1/3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/30">
@@ -515,11 +515,11 @@
         </div>
         <p id="lobby-error" class="text-red-400 mt-3 text-sm font-medium hidden bg-red-900/50 p-2 rounded-lg"></p>
     </div>
-
+    
     <div id="seat-select-view" class="glass-panel p-6 rounded-2xl w-full max-w-lg text-center hidden mx-4">
         <h2 class="text-2xl font-bold text-white mb-1">Избор на място</h2>
         <p class="text-slate-300 text-sm mb-6">Код: <span id="seat-room-code" class="text-green-400 font-mono font-bold text-lg bg-black/30 px-3 py-1 rounded-lg ml-1 border border-green-500/30"></span></p>
-
+        
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-black/20 p-4 rounded-xl border border-white/5">
                 <h3 class="text-sm font-bold text-green-400 mb-3 tracking-wider">ОТБОР 1 (НИЕ)</h3>
@@ -534,7 +534,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <div class="bg-black/20 p-4 rounded-xl border border-white/5">
                 <h3 class="text-sm font-bold text-red-400 mb-3 tracking-wider">ОТБОР 2 (ВИЕ)</h3>
                 <div class="flex flex-col gap-3">
@@ -549,7 +549,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div class="flex flex-col gap-3 justify-center">
             <button id="btn-start-multiplayer" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3.5 px-8 rounded-xl transition-all shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
                 🚀 Старт на играта (Свободните се попълват с Ботове)
@@ -559,7 +559,7 @@
             </button>
         </div>
     </div>
-
+    
     <div id="game-view" class="w-full h-full flex flex-col p-4 relative">
         <div id="scoreboard" class="absolute top-16 left-4 glass-panel border border-green-500/50 rounded-xl p-3 z-50 flex gap-5 hidden">
             <div class="text-center min-w-[50px]">
@@ -572,16 +572,16 @@
                 <div id="score-them" class="text-2xl text-white font-bold leading-none mt-1">0</div>
             </div>
         </div>
-
+        
         <div id="current-game-indicator" class="absolute top-4 right-4 md:left-1/2 md:transform md:-translate-x-1/2 md:right-auto glass-panel border border-yellow-500/50 text-slate-300 font-medium px-5 py-2.5 rounded-xl hidden z-50 flex items-center gap-2">
             <span class="text-xs uppercase tracking-wider opacity-80">Игра:</span> 
             <span id="current-game-value" class="text-yellow-400 font-bold text-lg drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]"></span>
         </div>
-
+        
         <div id="game-log-bar" class="absolute top-20 left-1/2 transform -translate-x-1/2 glass-panel text-yellow-300 font-medium text-xs md:text-sm px-5 py-1.5 rounded-full z-40 hidden max-w-[85vw] truncate text-center border-white/10">
             <span class="opacity-70 text-white mr-2">Анонс:</span><span id="log-text" class="text-white font-bold">Няма</span>
         </div>
-
+        
         <div class="flex justify-between items-start mb-2 z-40 relative pointer-events-none top-bar-container">
             <div class="glass-panel px-3 py-1.5 rounded-xl pointer-events-auto">
                 <h2 class="text-sm md:text-lg font-bold text-white flex items-center gap-2">Стая: <span id="display-room-code" class="text-emerald-400 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded"></span></h2>
@@ -589,7 +589,7 @@
             </div>
             <button id="btn-leave" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 px-3 py-1.5 rounded-xl text-xs md:text-base font-bold transition-all pointer-events-auto backdrop-blur-md">Напусни</button>
         </div>
-
+        
         <div class="flex-grow flex items-center justify-center pointer-events-none">
             <div class="poker-table pointer-events-auto">
                 <div id="seat-top" class="seat seat-top hidden">
@@ -609,22 +609,22 @@
                     <div class="speech-bubble" id="bubble-right"></div>
                     <div class="font-bold truncate text-sm" id="name-right">Изчаква...</div>
                 </div>
-
+                
                 <div id="seat-bottom" class="seat seat-bottom hidden border-green-500/50 bg-slate-800/90 shadow-[0_0_15px_rgba(74,222,128,0.2)]">
                     <div class="dealer-badge" id="dealer-bottom">D</div>
                     <div class="speech-bubble" id="bubble-bottom"></div>
                     <div class="font-bold truncate text-sm text-green-400" id="name-bottom">Аз</div>
                 </div>
-
+                
                 <div id="center-info" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0 flex flex-col items-center opacity-30 pointer-events-none mix-blend-overlay">
                     <div class="text-4xl font-black tracking-widest text-black drop-shadow-md">БЕЛОТ</div>
                 </div>
                 
                 <div id="waiting-msg" class="absolute top-[35%] left-1/2 transform -translate-x-1/2 text-center text-sm md:text-base font-medium text-white bg-black/40 px-4 py-1.5 rounded-full backdrop-blur-sm empty:hidden z-10"></div>
                 <div id="contract-display" class="absolute top-[65%] left-1/2 transform -translate-x-1/2 mt-2 text-lg font-bold text-yellow-400 drop-shadow-md hidden z-10"></div>
-
+                
                 <div id="trick-area"></div>
-
+                
                 <div id="bidding-panel" class="glass-panel">
                     <div class="w-full text-center text-xs text-slate-300 font-bold mb-1 uppercase tracking-wider opacity-80">Твой ред за анонс</div>
                     <div class="flex w-full gap-2 justify-center">
@@ -645,12 +645,12 @@
                     </div>
                     <button class="bid-btn pass w-full mt-1" data-bid="Пазас">ПАЗАС</button>
                 </div>
-
+                
                 <div class="hand-container" id="my-hand"></div>
             </div>
         </div>
     </div>
-
+    
     <!-- Modals -->
     <div id="custom-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
         <div class="glass-panel modal-content rounded-2xl p-6 md:p-8 max-w-md w-full text-center border border-white/10 shadow-2xl">
@@ -663,7 +663,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="leaderboard-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[80] hidden items-center justify-center px-4">
         <div class="glass-panel modal-content border-yellow-500/30 rounded-2xl p-6 max-w-md w-full text-center shadow-[0_0_30px_rgba(234,179,8,0.3)]">
             <div class="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3 border border-yellow-400/50 text-yellow-400 text-2xl font-black">🏆</div>
@@ -673,13 +673,13 @@
             <div id="leaderboard-list" class="flex flex-col gap-2 mb-6 text-left max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                 <div class="text-center text-slate-400 py-4">Зареждане...</div>
             </div>
-
+            
             <button id="btn-close-leaderboard" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-all border border-slate-500/40">
                 Затвори
             </button>
         </div>
     </div>
-
+    
     <div id="declarations-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] hidden items-center justify-center px-4">
         <div class="glass-panel modal-content border-blue-500/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(59,130,246,0.3)]">
             <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-400/50 text-blue-400 text-xl">ℹ️</div>
@@ -692,7 +692,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="belote-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[70] hidden items-center justify-center px-4">
         <div class="glass-panel modal-content border-yellow-500/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(234,179,8,0.3)]">
             <div class="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-400/50 text-yellow-400 text-2xl font-black">20</div>
@@ -704,13 +704,13 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Firebase & Game Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+        
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'belote-app';
         const fbConfig = {
             apiKey: "AIzaSyDIUyQGyL5mrBIgkUdAVqX3Bpv_ZhwKsI0",
@@ -721,11 +721,11 @@
             appId: "1:182833866712:web:f434a15667735fc3b134ad"
         };
         const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
+        
         const app = initializeApp(fbConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-
+        
         // State Variables
         let currentUser = null;
         let currentRoomCode = null;
@@ -734,7 +734,7 @@
         let isTrainingMode = false;
         let isSubmittingMove = false;
         let isClearingTrickMP = false;
-
+        
         let trainingHands = [[], [], [], []];
         let currentTrick = [];
         let currentTurn = 0;
@@ -754,13 +754,13 @@
         let allDeclaredItems = []; 
         let myPendingDeclarations = [];
         let pendingPlayCardIndex = -1;
-
+        
         let globalScore = { us: 0, them: 0 };
         let roundScore = { us: 0, them: 0 };
         let tricksWon = { us: 0, them: 0 };
         let lastBidderIndex = -1;
         let callerTeam = -1;
-
+        
         // UI Elements
         const lobbyView = document.getElementById('lobby-view');
         const seatSelectView = document.getElementById('seat-select-view');
@@ -772,15 +772,15 @@
         const modal = document.getElementById('custom-modal');
         const biddingPanel = document.getElementById('bidding-panel');
         const contractDisplay = document.getElementById('contract-display');
-
+        
         const seqOrder = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         const carreRankMap = { 'J': 6, '9': 5, 'A': 4, 'K': 3, 'Q': 2, '10': 1 };
         const bidHierarchy = { '♣': 1, '♦': 2, '♥': 3, '♠': 4, 'Под коньете': 5, 'На коньете': 6 };
-
+        
         const suits = ['♠', '♥', '♦', '♣'];
         const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         let deck = [];
-
+        
         function getWeekKey() {
             const d = new Date();
             d.setHours(0, 0, 0, 0);
@@ -789,40 +789,55 @@
             const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
             return `${d.getFullYear()}-W${weekNo}`;
         }
-
+        
         async function recordWinner(playerUid, playerName, winPoints = 1) {
-            if (!playerUid || playerUid.startsWith('bot_')) return;
+            let activeUid = playerUid || (auth.currentUser ? auth.currentUser.uid : null);
+            
+            if (!activeUid) {
+                try {
+                    const cred = await signInAnonymously(auth);
+                    activeUid = cred.user.uid;
+                } catch (e) {
+                    console.error("Грешка при автентикация за класация:", e);
+                    return;
+                }
+            }
+            
+            if (!activeUid || activeUid.startsWith('bot_')) return;
+            
             const weekKey = getWeekKey();
-            const leaderboardRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players', playerUid);
+            const leaderboardRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players', activeUid);
             
             try {
                 const snap = await getDoc(leaderboardRef);
+                const nameToSave = playerName || localStorage.getItem('belote_name') || 'Играч';
+                
                 if (snap.exists()) {
                     await updateDoc(leaderboardRef, {
                         wins: (snap.data().wins || 0) + winPoints,
-                        name: playerName
+                        name: nameToSave
                     });
                 } else {
                     await setDoc(leaderboardRef, {
-                        name: playerName,
+                        name: nameToSave,
                         wins: winPoints
                     });
                 }
             } catch (e) {
-                console.error("Грешка при запис на победа:", e);
+                console.error("Грешка при запис в базата данни:", e);
             }
         }
-
+        
         async function openLeaderboard() {
             const modalEl = document.getElementById('leaderboard-modal');
             const listEl = document.getElementById('leaderboard-list');
             modalEl.classList.remove('hidden');
             modalEl.classList.add('flex');
             listEl.innerHTML = '<div class="text-center text-slate-400 py-4">Зареждане на класирането...</div>';
-
+            
             const weekKey = getWeekKey();
             const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players');
-
+            
             try {
                 const baseSnap = await getDocs(playersCol);
                 
@@ -834,17 +849,17 @@
                         </div>`;
                     return;
                 }
-
+                
                 let playersList = [];
                 baseSnap.forEach(docSnap => {
                     playersList.push({ id: docSnap.id, ...docSnap.data() });
                 });
-
+                
                 playersList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
                 playersList = playersList.slice(0, 10);
-
+                
                 listEl.innerHTML = '';
-
+                
                 let rank = 1;
                 playersList.forEach(data => {
                     let medal = `#${rank}`;
@@ -852,7 +867,7 @@
                     if (rank === 1) { medal = '🥇'; bgStyle = 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'; }
                     else if (rank === 2) { medal = '🥈'; bgStyle = 'bg-slate-400/20 border-slate-400/40 text-slate-200'; }
                     else if (rank === 3) { medal = '🥉'; bgStyle = 'bg-amber-700/20 border-amber-600/40 text-amber-300'; }
-
+                    
                     const item = document.createElement('div');
                     item.className = `flex justify-between items-center p-3 rounded-xl border ${bgStyle} transition-all`;
                     item.innerHTML = `
@@ -874,14 +889,14 @@
                     </div>`;
             }
         }
-
+        
         document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
         document.getElementById('btn-close-leaderboard').addEventListener('click', () => {
             const modalEl = document.getElementById('leaderboard-modal');
             modalEl.classList.add('hidden');
             modalEl.classList.remove('flex');
         });
-
+        
         function getContractTrumpSuit(contractStr) {
             if (!contractStr) return null;
             if (contractStr.includes('♠') || contractStr.includes('Пипа')) return '♠';
@@ -890,44 +905,44 @@
             if (contractStr.includes('♣') || contractStr.includes('Скапия')) return '♣';
             return null;
         }
-
+        
         function isAllTrumps(contractStr) {
             return contractStr ? contractStr.includes('На коньете') : false;
         }
-
+        
         function isNoTrumps(contractStr) {
             return contractStr ? contractStr.includes('Под коньете') : false;
         }
-
+        
         // КОРЕКЦИЯ 1: Правилно закръгляне в Белота (Закръгляне в полза на отбора с по-висок резултат при остатък 4)
-        function calculatePairPoints(ptsA, ptsB) {
-            const remA = ptsA % 10;
-            const remB = ptsB % 10;
+        function calculatePairPoints(ptsA, ptsB, isNoTrumpsMode = false) {
+            let effectiveA = isNoTrumpsMode ? ptsA * 2 : ptsA;
+            let effectiveB = isNoTrumpsMode ? ptsB * 2 : ptsB;
             
-            let roundedA = Math.floor(ptsA / 10);
-            let roundedB = Math.floor(ptsB / 10);
-
+            const remA = effectiveA % 10;
+            const remB = effectiveB % 10;
+            
+            let roundedA = Math.floor(effectiveA / 10);
+            let roundedB = Math.floor(effectiveB / 10);
+            
             if (remA >= 6) roundedA++;
             if (remB >= 6) roundedB++;
-
-            // При остатък 4 на 4 (напр. 164 на 114) или при общ остатък = 8 (например 4 и 4):
-            // Точката от закръглянето се дава на отбора с ПОВЕЧЕ сурови точки.
+            
             if (remA === 4 && remB === 4) {
-                if (ptsA > ptsB) roundedA++;
-                else if (ptsB > ptsA) roundedB++;
+                if (effectiveA > effectiveB) roundedA++;
+                else if (effectiveB > effectiveA) roundedB++;
             } else if (remA === 5) {
-                roundedA++;
-            } else if (remB === 5) {
-                roundedB++;
+                if (effectiveA >= effectiveB) roundedA++;
+                else roundedB++;
             }
-
+            
             return { scoreA: roundedA, scoreB: roundedB };
         }
-
+        
         function getRoomPath(code) {
             return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
         }
-
+        
         function initDeck() {
             deck = [];
             suits.forEach(suit => {
@@ -937,7 +952,7 @@
             });
             deck.sort(() => Math.random() - 0.5);
         }
-
+        
         function showModal(title, msgHtml, callback) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-msg').innerHTML = msgHtml;
@@ -953,7 +968,7 @@
                 if(callback) callback();
             };
         }
-
+        
         function showGameOverModal(title, msgHtml, onRestart, onExit) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-msg').innerHTML = msgHtml;
@@ -967,7 +982,7 @@
                 </button>
             `;
             modal.style.display = 'flex';
-
+            
             document.getElementById('modal-btn-restart').onclick = () => {
                 modal.style.display = 'none';
                 if (onRestart) onRestart();
@@ -977,7 +992,7 @@
                 if (onExit) onExit();
             };
         }
-
+        
         function detectDeclarations(hand) {
             let decls = [];
             const valCounts = {};
@@ -998,7 +1013,7 @@
                     });
                 }
             });
-
+            
             suits.forEach(s => {
                 const suitCards = hand.filter(c => c.suit === s).map(c => c.val);
                 let currentSeq = [];
@@ -1017,16 +1032,16 @@
                     addSeqDeclaration(decls, currentSeq, s);
                 }
             });
-
+            
             return decls;
         }
-
+        
         function addSeqDeclaration(decls, seq, suit) {
             let pts = 20;
             let typeName = 'Терца';
             if (seq.length === 4) { pts = 50; typeName = 'Педесе'; }
             else if (seq.length >= 5) { pts = 100; typeName = 'Сто'; }
-
+            
             const topVal = seq[seq.length - 1];
             decls.push({
                 type: 'seq',
@@ -1039,14 +1054,14 @@
                 isCarre: false
             });
         }
-
+        
         function showDeclarationsModal(decls) {
             const modalEl = document.getElementById('declarations-modal');
             const listEl = document.getElementById('declarations-modal-list');
             listEl.innerHTML = '';
             
             myPendingDeclarations = decls;
-
+            
             decls.forEach((d, idx) => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center gap-3 cursor-pointer bg-black/20 border border-white/5 p-3 rounded-xl hover:bg-white/10 transition-colors';
@@ -1056,20 +1071,20 @@
                 `;
                 listEl.appendChild(label);
             });
-
+            
             modalEl.classList.remove('hidden');
             modalEl.classList.add('flex');
         }
-
+        
         document.getElementById('btn-declare-yes').addEventListener('click', async () => {
             const modalEl = document.getElementById('declarations-modal');
             modalEl.classList.add('hidden');
             modalEl.classList.remove('flex');
-
+            
             const checkboxes = document.querySelectorAll('#declarations-modal-list input[type="checkbox"]');
             let selectedPublicNames = [];
             let addedPoints = 0;
-
+            
             checkboxes.forEach(cb => {
                 if (cb.checked) {
                     const idx = parseInt(cb.getAttribute('data-index'));
@@ -1078,7 +1093,7 @@
                     selectedPublicNames.push(item.publicName);
                 }
             });
-
+            
             const pIdx = isTrainingMode ? 0 : mySeatIndex;
             if (selectedPublicNames.length > 0) {
                 showSpeechBubble(pIdx, selectedPublicNames.join(', '));
@@ -1095,17 +1110,17 @@
                     }
                 }
             }
-
+            
             renderPlayerHand();
         });
-
+        
         document.getElementById('btn-declare-no').addEventListener('click', () => {
             const modalEl = document.getElementById('declarations-modal');
             modalEl.classList.add('hidden');
             modalEl.classList.remove('flex');
             renderPlayerHand();
         });
-
+        
         async function initAuth() {
             try {
                 if (initialToken) await signInWithCustomToken(auth, initialToken);
@@ -1117,24 +1132,24 @@
                 console.warn("Автентикацията (Firebase) пропадна.");
             }
         }
-
+        
         function showError(msg) {
             errorMsg.textContent = msg;
             errorMsg.classList.remove('hidden');
             setTimeout(() => errorMsg.classList.add('hidden'), 4000);
         }
-
+        
         function resetGameState() {
             if (aiTimeout) {
                 clearTimeout(aiTimeout);
                 aiTimeout = null;
             }
-
+            
             if (unsubscribeRoom) {
                 unsubscribeRoom();
                 unsubscribeRoom = null;
             }
-
+            
             gamePhase = 'waiting';
             trainingHands = [[], [], [], []];
             currentTrick = [];
@@ -1159,12 +1174,12 @@
             roomDealAnimated = false;
             isSubmittingMove = false;
             isClearingTrickMP = false;
-
+            
             if (trickArea) trickArea.innerHTML = '';
             const handContainer = document.getElementById('my-hand');
             if (handContainer) handContainer.innerHTML = '';
             if (biddingPanel) biddingPanel.style.display = 'none';
-
+            
             document.getElementById('scoreboard').classList.add('hidden');
             document.getElementById('current-game-indicator').classList.add('hidden');
             document.getElementById('contract-display').classList.add('hidden');
@@ -1172,7 +1187,7 @@
             document.getElementById('declarations-modal').classList.remove('flex');
             document.getElementById('belote-modal').classList.add('hidden');
             document.getElementById('belote-modal').classList.remove('flex');
-
+            
             ['bottom', 'right', 'top', 'left'].forEach(pos => {
                 const seat = document.getElementById(`seat-${pos}`);
                 if (seat) seat.classList.add('hidden');
@@ -1182,24 +1197,24 @@
                     bubble.style.opacity = '0';
                     bubble.textContent = '';
                 }
-
+                
                 const badge = document.getElementById(`dealer-${pos}`);
                 if (badge) badge.style.display = 'none';
             });
         }
-
+        
         function updateDealerVisuals() {
             ['bottom', 'right', 'top', 'left'].forEach(pos => {
                 const badge = document.getElementById(`dealer-${pos}`);
                 if (badge) badge.style.display = 'none';
             });
-
+            
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
             const relIndex = isTrainingMode ? dealerIndex : (dealerIndex - mySeatIndex + 4) % 4;
             const activeBadge = document.getElementById(`dealer-${posMap[relIndex]}`);
             if (activeBadge) activeBadge.style.display = 'flex';
         }
-
+        
         function updateTurnVisuals() {
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
             ['bottom', 'right', 'top', 'left'].forEach(pos => {
@@ -1209,7 +1224,7 @@
                     seat.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)';
                 }
             });
-
+            
             if (currentTurn >= 0 && currentTurn <= 3) {
                 const relTurn = isTrainingMode ? currentTurn : (currentTurn - mySeatIndex + 4) % 4;
                 const activeSeat = document.getElementById(`seat-${posMap[relTurn]}`);
@@ -1219,7 +1234,7 @@
                 }
             }
         }
-
+        
         function showSpeechBubble(absPlayerIndex, text) {
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
             const relIndex = isTrainingMode ? absPlayerIndex : (absPlayerIndex - mySeatIndex + 4) % 4;
@@ -1231,18 +1246,18 @@
                 bubble.hideTimeout = setTimeout(() => { bubble.style.opacity = '0'; }, 2500);
             }
         }
-
+        
         function clearAllSpeechBubbles() {
             ['bottom', 'right', 'top', 'left'].forEach(pos => {
                 const bubble = document.getElementById(`bubble-${pos}`);
                 if (bubble) bubble.style.opacity = '0';
             });
         }
-
+        
         document.getElementById('btn-create').addEventListener('click', async () => {
             const name = playerNameInput.value.trim() || 'Играч';
             localStorage.setItem('belote_name', name);
-
+            
             if (!currentUser) {
                 try {
                     await signInAnonymously(auth);
@@ -1252,14 +1267,14 @@
                     return;
                 }
             }
-
+            
             const code = Math.random().toString(36).substring(2, 7).toUpperCase();
             const roomRef = getRoomPath(code);
-
+            
             try {
                 const initialSeats = [
-                    { uid: currentUser.uid, name: name },
-                    null, null, null
+                { uid: currentUser.uid, name: name },
+                null, null, null
                 ];
                 await setDoc(roomRef, {
                     createdAt: Date.now(),
@@ -1273,11 +1288,11 @@
                 showError("Грешка при създаване на стая: " + err.message);
             }
         });
-
+        
         document.getElementById('btn-join').addEventListener('click', async () => {
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
             if (!code) return showError("Моля въведете код!");
-
+            
             if (!currentUser) {
                 try {
                     await signInAnonymously(auth);
@@ -1287,33 +1302,33 @@
                     return;
                 }
             }
-
+            
             const name = playerNameInput.value.trim() || 'Играч';
             localStorage.setItem('belote_name', name);
-
+            
             const roomRef = getRoomPath(code);
             try {
                 const docSnap = await getDoc(roomRef);
                 if (!docSnap.exists()) return showError("Стаята не съществува!");
-
+                
                 joinSeatSelectionUI(code);
             } catch (err) {
                 showError("Грешка при присъединяване: " + err.message);
             }
         });
-
+        
         function joinSeatSelectionUI(code) {
             resetGameState();
             isTrainingMode = false;
             currentRoomCode = code;
-
+            
             lobbyView.style.display = 'none';
             seatSelectView.style.display = 'block';
             document.getElementById('seat-room-code').textContent = code;
-
+            
             listenToRoomSeatSelection(code);
         }
-
+        
         function listenToRoomSeatSelection(code) {
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
                 if (!docSnap.exists()) {
@@ -1325,20 +1340,20 @@
                 renderSeatSelectionView(docSnap.data());
             }, (error) => console.error("Listen seat error:", error));
         }
-
+        
         let currentRoomSeats = [null, null, null, null];
-
+        
         function renderSeatSelectionView(room) {
             currentRoomSeats = room.seats || [null, null, null, null];
             mySeatIndex = currentRoomSeats.findIndex(s => s && s.uid === (currentUser ? currentUser.uid : ''));
-
+            
             [0, 1, 2, 3].forEach(seatIdx => {
                 const seatBtn = document.getElementById(`seat-btn-${seatIdx}`);
                 const seatNameEl = seatBtn.querySelector('.seat-name');
                 const player = currentRoomSeats[seatIdx];
-
+                
                 seatBtn.onclick = null;
-
+                
                 if (player) {
                     if (currentUser && player.uid === currentUser.uid) {
                         seatBtn.className = 'seat-card my-seat';
@@ -1353,24 +1368,24 @@
                     seatBtn.onclick = () => selectSeat(seatIdx);
                 }
             });
-
+            
             const btnStart = document.getElementById('btn-start-multiplayer');
             btnStart.disabled = mySeatIndex === -1;
         }
-
+        
         async function selectSeat(targetSeatIndex) {
             if (!currentRoomCode || !currentUser) return;
             const name = playerNameInput.value.trim() || 'Играч';
             const roomRef = getRoomPath(currentRoomCode);
-
+            
             try {
                 const docSnap = await getDoc(roomRef);
                 if (!docSnap.exists()) return;
-
+                
                 const seats = docSnap.data().seats || [null, null, null, null];
                 const existingIndex = seats.findIndex(s => s && s.uid === currentUser.uid);
                 if (existingIndex !== -1) seats[existingIndex] = null;
-
+                
                 if (!seats[targetSeatIndex]) {
                     seats[targetSeatIndex] = { uid: currentUser.uid, name: name };
                     await updateDoc(roomRef, { seats: seats });
@@ -1381,19 +1396,19 @@
                 showError("Грешка при избор на място: " + err.message);
             }
         }
-
+        
         document.getElementById('btn-start-multiplayer').addEventListener('click', async () => {
             if (mySeatIndex === -1 || !currentRoomCode) return;
-
+            
             const startBtn = document.getElementById('btn-start-multiplayer');
             startBtn.disabled = true;
             startBtn.textContent = "Зареждане...";
-
+            
             try {
                 const roomRef = getRoomPath(currentRoomCode);
                 const docSnap = await getDoc(roomRef);
                 if (!docSnap.exists()) return;
-
+                
                 let seats = [...(docSnap.data().seats || [null, null, null, null])];
                 let botNum = 1;
                 
@@ -1402,19 +1417,19 @@
                         seats[i] = { uid: `bot_${i}`, name: `Бот ${botNum++}`, isBot: true };
                     }
                 }
-
+                
                 initDeck();
                 let initialDealer = Math.floor(Math.random() * 4);
                 let dealOrder = [(initialDealer + 1) % 4, (initialDealer + 2) % 4, (initialDealer + 3) % 4, initialDealer];
-
+                
                 let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
-
+                
                 for (let r = 0; r < 5; r++) {
                     for (let p of dealOrder) {
                         playerHands[`hand_${p}`].push(deck.pop());
                     }
                 }
-
+                
                 await updateDoc(roomRef, {
                     status: 'playing',
                     seats: seats,
@@ -1435,17 +1450,17 @@
                     roundScore: { team0: 0, team1: 0 },
                     tricksWon: { team0: 0, team1: 0 }
                 });
-
+                
                 if (unsubscribeRoom) {
                     unsubscribeRoom();
                     unsubscribeRoom = null;
                 }
-
+                
                 seatSelectView.style.display = 'none';
                 gameView.style.display = 'flex';
                 document.getElementById('display-room-code').textContent = currentRoomCode;
                 document.getElementById('game-subtitle').textContent = 'Онлайн мултиплейър';
-
+                
                 listenToRoom(currentRoomCode);
             } catch (err) {
                 showError("Грешка при стартиране: " + err.message);
@@ -1453,7 +1468,7 @@
                 startBtn.textContent = "🚀 Старт на играта (Свободните са Ботове)";
             }
         });
-
+        
         function updateMultiplayerSeatNames(seats) {
             const seatPositions = ['bottom', 'right', 'top', 'left'];
             
@@ -1483,21 +1498,21 @@
                 }
             }
         }
-
+        
         document.getElementById('btn-cancel-seat-select').addEventListener('click', () => {
             leaveRoomAndReset();
         });
-
+        
         document.getElementById('btn-leave').addEventListener('click', () => {
             leaveRoomAndReset();
         });
-
+        
         async function leaveRoomAndReset() {
             const codeToLeave = currentRoomCode;
             const seatToLeave = mySeatIndex;
-
+            
             resetGameState();
-
+            
             if (codeToLeave && currentUser) {
                 try {
                     const roomRef = getRoomPath(codeToLeave);
@@ -1511,17 +1526,17 @@
                     }
                 } catch(e) { console.error(e); }
             }
-
+            
             isTrainingMode = false;
             currentRoomCode = null;
             lobbyView.style.display = 'block';
             seatSelectView.style.display = 'none';
             gameView.style.display = 'none';
         }
-
+        
         let roomDealAnimated = false;
         let lastMultiplayerPhase = 'waiting';
-
+        
         function getFullBidDisplay(bid) {
             if (bid === '♣') return 'Скапия ♣';
             if (bid === '♦') return 'Кало ♦';
@@ -1529,7 +1544,7 @@
             if (bid === '♠') return 'Пипа ♠';
             return bid;
         }
-
+        
         function listenToRoom(code) {
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
                 if (!docSnap.exists()) {
@@ -1543,12 +1558,12 @@
                     currentRoomSeats = data.seats;
                     updateMultiplayerSeatNames(data.seats);
                 }
-
+                
                 if (data && data.status === 'playing') {
                     seatSelectView.style.display = 'none';
                     gameView.style.display = 'flex';
                     document.getElementById('scoreboard').classList.remove('hidden');
-
+                    
                     if (data.globalScore) {
                         globalScore = data.globalScore;
                         document.getElementById('score-us').textContent = globalScore.us || 0;
@@ -1563,7 +1578,7 @@
                     currentTrick = data.currentTrick || [];
                     gameMultiplier = data.gameMultiplier || 1;
                     kontraBidderIndex = data.kontraBidderIndex !== undefined ? data.kontraBidderIndex : -1;
-
+                    
                     if (data.gamePhase === 'playing' && data.currentContract) {
                         let multStr = (data.gameMultiplier === 2) ? ' (КОНТРА)' : (data.gameMultiplier === 4) ? ' (РЕКОНТРА)' : '';
                         document.getElementById('current-game-value').textContent = `${data.currentContract}${multStr}`;
@@ -1575,9 +1590,9 @@
                         document.getElementById('current-game-indicator').classList.add('hidden');
                         document.getElementById('contract-display').classList.add('hidden');
                     }
-
+                    
                     renderTrickArea();
-
+                    
                     if (currentTrick.length >= 4 && !isClearingTrickMP) {
                         isClearingTrickMP = true;
                         
@@ -1591,7 +1606,7 @@
                             let winnerPlay = first4[0];
                             let highestPower = getCardPower(winnerPlay.card, ledSuit, data.currentContract);
                             let trickPoints = getCardPoints(winnerPlay.card, data.currentContract);
-
+                            
                             for (let i = 1; i < 4; i++) {
                                 let play = first4[i];
                                 let power = getCardPower(play.card, ledSuit, data.currentContract);
@@ -1601,11 +1616,11 @@
                                     winnerPlay = play;
                                 }
                             }
-
+                            
                             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
                             const relWinner = (winnerPlay.player - mySeatIndex + 4) % 4;
                             const winnerPos = posMap[relWinner];
-
+                            
                             const trickCards = document.querySelectorAll('.trick-card');
                             trickCards.forEach(cardEl => {
                                 cardEl.style.transition = 'all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
@@ -1615,7 +1630,7 @@
                                 else if (winnerPos === 'top') cardEl.style.transform = 'translate(-50%, -350px) scale(0.1)';
                                 else if (winnerPos === 'left') cardEl.style.transform = 'translate(-350px, -50%) scale(0.1)';
                             });
-
+                            
                             setTimeout(async () => {
                                 try {
                                     const roomRef = getRoomPath(currentRoomCode);
@@ -1623,12 +1638,12 @@
                                     if (!snap.exists()) return;
                                     const snapData = snap.data();
                                     const snapTrick = snapData.currentTrick || [];
-
+                                    
                                     if (snapTrick.length >= 4) {
                                         const winnerTeam = (winnerPlay.player % 2 === 0) ? 0 : 1;
                                         let currentTeamScores = snapData.roundScore || { team0: 0, team1: 0 };
                                         let currentTricksWon = snapData.tricksWon || { team0: 0, team1: 0 };
-
+                                        
                                         if (winnerTeam === 0) {
                                             currentTeamScores.team0 += trickPoints;
                                             currentTricksWon.team0 += 1;
@@ -1636,7 +1651,7 @@
                                             currentTeamScores.team1 += trickPoints;
                                             currentTricksWon.team1 += 1;
                                         }
-
+                                        
                                         let allHandsEmpty = true;
                                         if (snapData.hands) {
                                             for (let i = 0; i < 4; i++) {
@@ -1645,24 +1660,24 @@
                                                 }
                                             }
                                         }
-
+                                        
                                         if (allHandsEmpty) {
                                             if (winnerTeam === 0) currentTeamScores.team0 += 10;
                                             else currentTeamScores.team1 += 10;
-
+                                            
                                             let team0Raw = currentTeamScores.team0;
                                             let team1Raw = currentTeamScores.team1;
-
+                                            
                                             if (currentTricksWon.team0 === 8) team0Raw += 90;
                                             if (currentTricksWon.team1 === 8) team1Raw += 90;
-
+                                            
                                             const callerTeamIdx = (snapData.lastBidderIndex % 2 === 0) ? 0 : 1;
                                             const multiplier = snapData.gameMultiplier || 1;
-
+                                            
                                             let team0Points = 0;
                                             let team1Points = 0;
                                             let isInside = false;
-
+                                            
                                             if (multiplier > 1) {
                                                 if (team0Raw > team1Raw) {
                                                     let rounded = calculatePairPoints(team0Raw + team1Raw, 0);
@@ -1705,10 +1720,10 @@
                                                     }
                                                 }
                                             }
-
+                                            
                                             let newGlobalUs = (snapData.globalScore?.us || 0) + team0Points;
                                             let newGlobalThem = (snapData.globalScore?.them || 0) + team1Points;
-
+                                            
                                             let matchWinnerTeam = -1;
                                             if (newGlobalUs >= 151 || newGlobalThem >= 151) {
                                                 matchWinnerTeam = newGlobalUs >= 151 ? 0 : 1;
@@ -1720,7 +1735,7 @@
                                                     if (p2) await recordWinner(p2.uid, p2.name, 2);
                                                 }
                                             }
-
+                                            
                                             await updateDoc(roomRef, {
                                                 currentTrick: [],
                                                 currentTurn: winnerPlay.player,
@@ -1753,7 +1768,7 @@
                             }, 550);
                         }, 400);
                     }
-
+                    
                     if (data.gamePhase === 'round_ended' && !data.hasShownSummary) {
                         const summary = data.lastRoundSummary || { usPts: 0, themPts: 0, team0Raw: 0, team1Raw: 0, isInside: false, matchWinnerTeam: -1 };
                         let insideText = summary.isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
@@ -1772,7 +1787,7 @@
                                 <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
                             </div>
                         `;
-
+                        
                         if (summary.matchWinnerTeam !== -1) {
                             let winnerHeader = `<h3 class="text-xl font-bold text-center mb-2 text-yellow-400">🎉 ПОБЕДА ЗА ${summary.matchWinnerTeam === 0 ? 'ОТБОР НИЕ' : 'ОТБОР ВИЕ'}! 🎉</h3>`;
                             
@@ -1781,12 +1796,12 @@
                                     initDeck();
                                     let newDealer = (data.dealerIndex + 1) % 4;
                                     let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
-
+                                    
                                     let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
                                     for (let r = 0; r < 5; r++) {
                                         for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
                                     }
-
+                                    
                                     await updateDoc(getRoomPath(currentRoomCode), {
                                         dealerIndex: newDealer,
                                         currentTurn: (newDealer + 1) % 4,
@@ -1814,12 +1829,12 @@
                                     initDeck();
                                     let newDealer = (data.dealerIndex + 1) % 4;
                                     let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
-
+                                    
                                     let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
                                     for (let r = 0; r < 5; r++) {
                                         for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
                                     }
-
+                                    
                                     await updateDoc(getRoomPath(currentRoomCode), {
                                         dealerIndex: newDealer,
                                         currentTurn: (newDealer + 1) % 4,
@@ -1840,11 +1855,11 @@
                             });
                         }
                     }
-
+                    
                     if (data.hands && mySeatIndex !== -1) {
                         trainingHands[mySeatIndex] = data.hands[`hand_${mySeatIndex}`] || [];
                         sortPlayerHand();
-
+                        
                         if (!roomDealAnimated) {
                             roomDealAnimated = true;
                             let initialDealer = data.dealerIndex;
@@ -1872,15 +1887,15 @@
                             if (gamePhase === 'playing') checkDeclarationsMP();
                         }
                     }
-
+                    
                     lastMultiplayerPhase = data.gamePhase;
-
+                    
                     if (data.gamePhase === 'bidding' && data.lastBidText && data.lastBidPlayer !== undefined) {
                         showSpeechBubble(data.lastBidPlayer, getFullBidDisplay(data.lastBidText));
                     } else if (data.gamePhase === 'playing') {
                         clearAllSpeechBubbles();
                     }
-
+                    
                     if (data.gamePhase === 'bidding' && data.currentTurn === mySeatIndex) {
                         const currentBidVal = currentContractRaw ? (bidHierarchy[currentContractRaw] || 0) : 0;
                         document.querySelectorAll('.bid-btn:not(.pass):not(.kontra):not(.rekontra)').forEach(btn => {
@@ -1894,25 +1909,25 @@
                                 btn.disabled = false;
                             }
                         });
-
+                        
                         const btnKontra = document.getElementById('btn-kontra');
                         const btnRekontra = document.getElementById('btn-rekontra');
                         const isOpponentContract = currentContract !== null && (data.lastBidderIndex % 2 !== mySeatIndex % 2);
                         const isOpponentKontra = data.gameMultiplier === 2 && (data.kontraBidderIndex % 2 !== mySeatIndex % 2);
-
+                        
                         btnKontra.style.display = (isOpponentContract && data.gameMultiplier === 1) ? 'block' : 'none';
                         btnRekontra.style.display = isOpponentKontra ? 'block' : 'none';
-
+                        
                         biddingPanel.style.display = 'flex';
                     } else {
                         biddingPanel.style.display = 'none';
                     }
-
+                    
                     checkAndTriggerBotTurn(data);
                 }
             }, (error) => console.error("Listen room error:", error));
         }
-
+        
         function checkDeclarationsMP() {
             if (isFirstTrick && !hasShownDeclarations && currentContract !== 'Под коньете' && mySeatIndex !== -1) {
                 const hand = trainingHands[mySeatIndex] || [];
@@ -1925,12 +1940,12 @@
                 }
             }
         }
-
+        
         async function checkAndTriggerBotTurn(roomData) {
             if (roomData.status !== 'playing') return;
             const activePlayerIndex = roomData.currentTurn;
             const activeSeat = roomData.seats[activePlayerIndex];
-
+            
             if (activeSeat && activeSeat.isBot) {
                 const firstHumanIndex = roomData.seats.findIndex(s => s && !s.isBot);
                 if (mySeatIndex === firstHumanIndex) {
@@ -1944,23 +1959,23 @@
                 }
             }
         }
-
+        
         async function executeBotBiddingMultiplayer(roomData) {
             const currentBidVal = roomData.currentContractRaw ? (bidHierarchy[roomData.currentContractRaw] || 0) : 0;
             const possibleBids = Object.keys(bidHierarchy).filter(b => bidHierarchy[b] > currentBidVal);
             let bid = "Пазас";
-
+            
             if (possibleBids.length > 0 && Math.random() > 0.8) {
                 bid = possibleBids[Math.floor(Math.random() * possibleBids.length)];
             }
-
+            
             let newContract = roomData.currentContract;
             let newContractRaw = roomData.currentContractRaw;
             let passes = roomData.consecutivePasses || 0;
             let lastBidder = roomData.lastBidderIndex !== undefined ? roomData.lastBidderIndex : -1;
             let mult = roomData.gameMultiplier || 1;
             let kontraBidder = roomData.kontraBidderIndex !== undefined ? roomData.kontraBidderIndex : -1;
-
+            
             if (bid === 'Пазас') {
                 passes++;
             } else if (bid === 'Контра') {
@@ -1978,19 +1993,19 @@
                 mult = 1;
                 kontraBidder = -1;
             }
-
+            
             let nextTurn = (roomData.currentTurn + 1) % 4;
-
+            
             if (passes === 4 && newContract === null) {
                 initDeck();
                 let newDealer = (roomData.dealerIndex + 1) % 4;
                 let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
-
+                
                 let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
                 for (let r = 0; r < 5; r++) {
                     for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
                 }
-
+                
                 await updateDoc(getRoomPath(currentRoomCode), {
                     dealerIndex: newDealer,
                     currentTurn: (newDealer + 1) % 4,
@@ -2007,7 +2022,7 @@
                 });
                 return;
             }
-
+            
             if (passes >= 3 && newContract !== null) {
                 let currentDeck = [...(roomData.deck || [])];
                 if (currentDeck.length < 12) {
@@ -2017,13 +2032,13 @@
                 
                 let updatedHands = { ...roomData.hands };
                 let dealOrder = [(roomData.dealerIndex + 1) % 4, (roomData.dealerIndex + 2) % 4, (roomData.dealerIndex + 3) % 4, roomData.dealerIndex];
-
+                
                 for (let r = 0; r < 3; r++) {
                     for (let p of dealOrder) {
                         updatedHands[`hand_${p}`].push(currentDeck.pop());
                     }
                 }
-
+                
                 await updateDoc(getRoomPath(currentRoomCode), {
                     gamePhase: 'playing',
                     hands: updatedHands,
@@ -2037,7 +2052,7 @@
                 });
                 return;
             }
-
+            
             await updateDoc(getRoomPath(currentRoomCode), {
                 currentTurn: nextTurn,
                 currentContract: newContract,
@@ -2050,12 +2065,12 @@
                 kontraBidderIndex: kontraBidder
             });
         }
-
+        
         async function executeBotPlayMultiplayer(roomData) {
             if ((roomData.currentTrick || []).length >= 4) return;
             const botHand = roomData.hands[`hand_${roomData.currentTurn}`] || [];
             if (botHand.length === 0) return;
-
+            
             const validCards = getValidCards(botHand, roomData.currentTrick || [], roomData.currentContract || '');
             const cardToPlay = validCards[Math.floor(Math.random() * validCards.length)];
             
@@ -2067,10 +2082,10 @@
             
             let nextTurn = (roomData.currentTurn + 1) % 4;
             updatePayload['currentTurn'] = updatePayload['currentTrick'].length >= 4 ? roomData.currentTurn : nextTurn;
-
+            
             await updateDoc(getRoomPath(currentRoomCode), updatePayload);
         }
-
+        
         document.querySelectorAll('.bid-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const bid = e.target.getAttribute('data-bid');
@@ -2086,14 +2101,14 @@
                     const docSnap = await getDoc(roomRef);
                     if (!docSnap.exists()) return;
                     const roomData = docSnap.data();
-
+                    
                     let newContract = roomData.currentContract;
                     let newContractRaw = roomData.currentContractRaw;
                     let passes = roomData.consecutivePasses || 0;
                     let lastBidder = roomData.lastBidderIndex !== undefined ? roomData.lastBidderIndex : -1;
                     let mult = roomData.gameMultiplier || 1;
                     let kontraBidder = roomData.kontraBidderIndex !== undefined ? roomData.kontraBidderIndex : -1;
-
+                    
                     if (bid === 'Пазас') {
                         passes++;
                     } else if (bid === 'Контра') {
@@ -2111,19 +2126,19 @@
                         mult = 1;
                         kontraBidder = -1;
                     }
-
+                    
                     let nextTurn = (currentTurn + 1) % 4;
-
+                    
                     if (passes === 4 && newContract === null) {
                         initDeck();
                         let newDealer = (roomData.dealerIndex + 1) % 4;
                         let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
-
+                        
                         let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
                         for (let r = 0; r < 5; r++) {
                             for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
                         }
-
+                        
                         await updateDoc(roomRef, {
                             dealerIndex: newDealer,
                             currentTurn: (newDealer + 1) % 4,
@@ -2140,23 +2155,23 @@
                         });
                         return;
                     }
-
+                    
                     if (passes >= 3 && newContract !== null) {
                         let currentDeck = [...(roomData.deck || [])];
                         if (currentDeck.length < 12) {
                             initDeck();
                             currentDeck = deck;
                         }
-
+                        
                         let updatedHands = { ...roomData.hands };
                         let dealOrder = [(roomData.dealerIndex + 1) % 4, (roomData.dealerIndex + 2) % 4, (roomData.dealerIndex + 3) % 4, roomData.dealerIndex];
-
+                        
                         for (let r = 0; r < 3; r++) {
                             for (let p of dealOrder) {
                                 updatedHands[`hand_${p}`].push(currentDeck.pop());
                             }
                         }
-
+                        
                         await updateDoc(roomRef, {
                             gamePhase: 'playing',
                             hands: updatedHands,
@@ -2170,7 +2185,7 @@
                         });
                         return;
                     }
-
+                    
                     await updateDoc(roomRef, {
                         currentTurn: nextTurn,
                         currentContract: newContract,
@@ -2185,7 +2200,7 @@
                 }
             });
         });
-
+        
         document.getElementById('btn-training').addEventListener('click', () => {
             resetGameState();
             isTrainingMode = true;
@@ -2202,10 +2217,10 @@
             waitingMsg.textContent = "";
             contractDisplay.classList.add('hidden');
             dealerIndex = Math.floor(Math.random() * 4);
-
+            
             startTrainingGame();
         });
-
+        
         function animateDeal(cardsPerPlayer, dealOrder, callback) {
             if (cardsPerPlayer === 5) {
                 document.getElementById('my-hand').innerHTML = '';
@@ -2226,7 +2241,7 @@
                 
                 const targetPlayer = dealOrder[dealCount % 4]; 
                 const relTarget = isTrainingMode ? targetPlayer : (targetPlayer - mySeatIndex + 4) % 4;
-
+                
                 const cardEl = document.createElement('div');
                 cardEl.className = 'dealing-anim';
                 table.appendChild(cardEl);
@@ -2244,7 +2259,7 @@
                 dealCount++;
             }, 80);
         }
-
+        
         function sortPlayerHand() {
             let targetIdx = isTrainingMode ? 0 : mySeatIndex;
             if (trainingHands[targetIdx]) {
@@ -2254,7 +2269,7 @@
                 });
             }
         }
-
+        
         function startTrainingGame() {
             clearTimeout(aiTimeout);
             trickArea.innerHTML = '';
@@ -2269,12 +2284,12 @@
             hasShownDeclarations = false;
             allDeclaredItems = [];
             myPendingDeclarations = [];
-
+            
             roundScore = { us: 0, them: 0 };
             tricksWon = { us: 0, them: 0 };
             lastBidderIndex = -1;
             callerTeam = -1;
-
+            
             document.getElementById('declarations-modal').classList.add('hidden');
             document.getElementById('declarations-modal').classList.remove('flex');
             contractDisplay.classList.add('hidden');
@@ -2291,7 +2306,7 @@
             document.getElementById('name-right').textContent = 'Бот Изток';
             document.getElementById('name-top').textContent = 'Бот Север';
             document.getElementById('name-left').textContent = 'Бот Запад';
-
+            
             initDeck();
             trainingHands = [[], [], [], []];
             
@@ -2304,13 +2319,13 @@
             }
             
             sortPlayerHand();
-
+            
             animateDeal(5, dealOrder, () => {
                 renderPlayerHand();
                 startBiddingPhase();
             });
         }
-
+        
         function startBiddingPhase() {
             gamePhase = 'bidding';
             currentTurn = (dealerIndex + 1) % 4;
@@ -2334,13 +2349,13 @@
                         btn.disabled = false;
                     }
                 });
-
+                
                 const btnKontra = document.getElementById('btn-kontra');
                 const btnRekontra = document.getElementById('btn-rekontra');
-
+                
                 const isOpponentContract = currentContract !== null && (lastBidderIndex % 2 !== 0);
                 const isOpponentKontra = gameMultiplier === 2 && (kontraBidderIndex % 2 !== 0);
-
+                
                 if (isOpponentContract && gameMultiplier === 1) {
                     btnKontra.style.display = 'block';
                     btnKontra.disabled = false;
@@ -2348,7 +2363,7 @@
                 } else {
                     btnKontra.style.display = 'none';
                 }
-
+                
                 if (isOpponentKontra) {
                     btnRekontra.style.display = 'block';
                     btnRekontra.disabled = false;
@@ -2356,23 +2371,23 @@
                 } else {
                     btnRekontra.style.display = 'none';
                 }
-
+                
                 biddingPanel.style.display = 'flex';
             } else {
                 aiTimeout = setTimeout(aiBid, 1200);
             }
         }
-
+        
         function aiBid() {
             if (!isTrainingMode) return;
             const currentBidVal = currentContractRaw ? (bidHierarchy[currentContractRaw] || 0) : 0;
             const possibleBids = Object.keys(bidHierarchy).filter(b => bidHierarchy[b] > currentBidVal);
             
             let bid = "Пазас";
-
+            
             const isOpponentContract = currentContract !== null && (lastBidderIndex % 2 !== currentTurn % 2);
             const isOwnKontraContract = gameMultiplier === 2 && (kontraBidderIndex % 2 !== currentTurn % 2);
-
+            
             if (isOpponentContract && gameMultiplier === 1 && Math.random() < 0.12) {
                 bid = "Контра";
             } else if (isOwnKontraContract && gameMultiplier === 2 && Math.random() < 0.1) {
@@ -2392,7 +2407,7 @@
             if (bid === 'Пазас') displayBid = 'Пазас';
             
             showSpeechBubble(playerIndex, displayBid);
-
+            
             const logBar = document.getElementById('game-log-bar');
             const logText = document.getElementById('log-text');
             logBar.classList.remove('hidden');
@@ -2420,7 +2435,7 @@
                 setTimeout(() => {
                     if (!isTrainingMode) return;
                     clearAllSpeechBubbles();
-
+                    
                     if (currentContract === null) {
                         waitingMsg.textContent = "Всички казаха Пазас. Ново раздаване...";
                         setTimeout(() => {
@@ -2438,7 +2453,7 @@
                         document.getElementById('current-game-value').textContent = `${currentContract}${multStr}`;
                         document.getElementById('current-game-indicator').classList.remove('hidden');
                         document.getElementById('current-game-indicator').classList.add('flex');
-
+                        
                         waitingMsg.textContent = "Раздаване на останалите 3 карти...";
                         dealRemainingCards();
                     }
@@ -2449,7 +2464,7 @@
                 handleBiddingTurn();
             }
         }
-
+        
         function dealRemainingCards() {
             if (!isTrainingMode) return;
             let dealOrder = [(dealerIndex + 1) % 4, (dealerIndex + 2) % 4, (dealerIndex + 3) % 4, dealerIndex];
@@ -2472,7 +2487,7 @@
                 handlePlayTurn();
             });
         }
-
+        
         function handlePlayTurn() {
             if (!isTrainingMode) return;
             if (currentTurn !== 0) {
@@ -2500,7 +2515,7 @@
                 }
             }
         }
-
+        
         function getValidCards(hand, trick, contract) {
             if (!hand || hand.length === 0) return [];
             if (!trick || trick.length === 0) return [...hand];
@@ -2517,7 +2532,7 @@
             let winnerIndex = -1;
             let highestLedPower = -1;
             let highestTrumpPower = -1;
-
+            
             trick.forEach(play => {
                 const power = getCardPower(play.card, ledSuit, contract || '');
                 if (power > highestPower) {
@@ -2531,11 +2546,11 @@
                     highestTrumpPower = power;
                 }
             });
-
+            
             const activePlayer = isTrainingMode ? currentTurn : mySeatIndex;
             const partnerIndex = (activePlayer + 2) % 4;
             const partnerIsWinning = (winnerIndex === partnerIndex);
-
+            
             if (hasLedSuit) {
                 const ledCards = hand.filter(c => c.suit === ledSuit);
                 const mustOvertrump = allTrumps || ledSuit === trumpSuit;
@@ -2563,19 +2578,19 @@
                 return [...hand];
             }
         }
-
+        
         function checkBeloteEligibility(playerIndex, cardIndex) {
             const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
             const playedCard = hand[cardIndex];
-
+            
             if (!playedCard) return false;
             const val = playedCard.val;
             if (val !== 'K' && val !== 'Q') return false;
-
+            
             const noTrumps = isNoTrumps(currentContract);
             if (noTrumps) return false;
-
+            
             const allTrumps = isAllTrumps(currentContract);
             const trumpSuit = getContractTrumpSuit(currentContract);
             
@@ -2586,13 +2601,13 @@
             } else if (trumpSuit) {
                 isTrump = (playedCard.suit === trumpSuit);
             }
-
+            
             if (!isTrump) return false;
-
+            
             const requiredPartnerVal = val === 'K' ? 'Q' : 'K';
             return hand.some((c, idx) => idx !== cardIndex && c.suit === playedCard.suit && c.val === requiredPartnerVal);
         }
-
+        
         function renderPlayerHand() {
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
@@ -2601,8 +2616,8 @@
             const hand = trainingHands[targetIdx] || [];
             
             let isMyTurnToPlay = isTrainingMode 
-                ? (gamePhase === 'playing' && currentTurn === 0) 
-                : (gamePhase === 'playing' && currentTurn === mySeatIndex && currentTrick.length < 4 && !isSubmittingMove);
+            ? (gamePhase === 'playing' && currentTurn === 0) 
+            : (gamePhase === 'playing' && currentTurn === mySeatIndex && currentTrick.length < 4 && !isSubmittingMove);
             
             let validCards = isMyTurnToPlay ? getValidCards(hand, currentTrick, currentContract || '') : [];
             const isMobile = window.innerWidth <= 768;
@@ -2639,7 +2654,7 @@
                 handContainer.appendChild(cardEl);
             });
         }
-
+        
         function checkAndPlayCard(playerIndex, cardIndex) {
             if (checkBeloteEligibility(playerIndex, cardIndex)) {
                 pendingPlayCardIndex = cardIndex;
@@ -2650,7 +2665,7 @@
                 playCardConfirmed(playerIndex, cardIndex, false);
             }
         }
-
+        
         document.getElementById('btn-belote-yes').addEventListener('click', () => {
             const beloteModal = document.getElementById('belote-modal');
             beloteModal.classList.add('hidden');
@@ -2661,7 +2676,7 @@
                 playCardConfirmed(isTrainingMode ? 0 : mySeatIndex, idx, true);
             }
         });
-
+        
         document.getElementById('btn-belote-no').addEventListener('click', () => {
             const beloteModal = document.getElementById('belote-modal');
             beloteModal.classList.add('hidden');
@@ -2672,23 +2687,23 @@
                 playCardConfirmed(isTrainingMode ? 0 : mySeatIndex, idx, false);
             }
         });
-
+        
         async function playCardConfirmed(playerIndex, cardIndex, isBelote) {
             if (isSubmittingMove) return;
             
             const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
             const playedCard = hand[cardIndex];
-
+            
             if (!playedCard) return;
             if (!isTrainingMode && currentTrick.length >= 4) return;
-
+            
             isSubmittingMove = true;
-
+            
             if (isBelote) {
                 showSpeechBubble(playerIndex, "БЕЛОТ! (+20т.)");
             }
-
+            
             if (isTrainingMode) {
                 if (isBelote) roundScore.us += 20;
                 trainingHands[playerIndex].splice(cardIndex, 1);
@@ -2696,7 +2711,7 @@
                 
                 renderTrickArea();
                 if (playerIndex === 0) renderPlayerHand();
-
+                
                 if (currentTrick.length === 4) {
                     currentTurn = -1;
                     updateTurnVisuals();
@@ -2711,10 +2726,10 @@
                 try {
                     trainingHands[mySeatIndex] = trainingHands[mySeatIndex].filter(c => !(c.suit === playedCard.suit && c.val === playedCard.val));
                     currentTrick.push({ player: mySeatIndex, card: playedCard });
-
+                    
                     renderTrickArea();
                     renderPlayerHand();
-
+                    
                     const roomRef = getRoomPath(currentRoomCode);
                     const docSnap = await getDoc(roomRef);
                     
@@ -2722,16 +2737,16 @@
                         const roomData = docSnap.data();
                         const serverHand = roomData.hands[`hand_${mySeatIndex}`] || [];
                         const updatedServerHand = serverHand.filter(c => !(c.suit === playedCard.suit && c.val === playedCard.val));
-
+                        
                         const newTrick = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
                         let nextTurn = (mySeatIndex + 1) % 4;
-
+                        
                         let currentTeamScores = roomData.roundScore || { team0: 0, team1: 0 };
                         if (isBelote) {
                             if (mySeatIndex % 2 === 0) currentTeamScores.team0 += 20;
                             else currentTeamScores.team1 += 20;
                         }
-
+                        
                         await updateDoc(roomRef, {
                             [`hands.hand_${mySeatIndex}`]: updatedServerHand,
                             currentTrick: newTrick,
@@ -2746,7 +2761,7 @@
                 }
             }
         }
-
+        
         function aiPlay() {
             if (!isTrainingMode || gamePhase !== 'playing' || currentTrick.length === 4) return;
             const hand = trainingHands[currentTurn];
@@ -2759,7 +2774,7 @@
             const isBelote = checkBeloteEligibility(currentTurn, cardIndex);
             playCardConfirmed(currentTurn, cardIndex, isBelote);
         }
-
+        
         function renderTrickArea() {
             if (isClearingTrickMP) return;
             trickArea.innerHTML = '';
@@ -2776,7 +2791,7 @@
                 trickArea.appendChild(cardEl);
             });
         }
-
+        
         function getCardPoints(card, contractStr) {
             if (!contractStr) return 0;
             const allTrumps = isAllTrumps(contractStr);
@@ -2790,7 +2805,7 @@
                 switch(card.val) { case 'A': return 11; case '10': return 10; case 'K': return 4; case 'Q': return 3; case 'J': return 2; default: return 0; }
             }
         }
-
+        
         function getCardPower(card, ledSuit, contractStr) {
             if (!contractStr) return 0;
             const allTrumps = isAllTrumps(contractStr);
@@ -2806,21 +2821,21 @@
             } else if (isLedSuit) {
                 power += 100;
                 if (allTrumps) {
-                     switch(card.val) { case 'J': power += 20; break; case '9': power += 14; break; case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case '8': power += 2; break; case '7': power += 1; break; }
+                    switch(card.val) { case 'J': power += 20; break; case '9': power += 14; break; case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case '8': power += 2; break; case '7': power += 1; break; }
                 } else {
-                     switch(card.val) { case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case 'J': power += 2; break; case '9': power += 1.5; break; case '8': power += 1; break; case '7': power += 0.5; break; }
+                    switch(card.val) { case 'A': power += 11; break; case '10': power += 10; break; case 'K': power += 4; break; case 'Q': power += 3; break; case 'J': power += 2; break; case '9': power += 1.5; break; case '8': power += 1; break; case '7': power += 0.5; break; }
                 }
             }
             return power;
         }
-
+        
         function resolveTrick() {
             if (!isTrainingMode) return;
             const ledSuit = currentTrick[0].card.suit;
             let winnerPlay = currentTrick[0];
             let highestPower = getCardPower(winnerPlay.card, ledSuit, currentContract);
             let trickPoints = getCardPoints(winnerPlay.card, currentContract);
-
+            
             for (let i = 1; i < 4; i++) {
                 let play = currentTrick[i];
                 let power = getCardPower(play.card, ledSuit, currentContract);
@@ -2842,16 +2857,16 @@
                 roundScore.them += trickPoints;
                 tricksWon.them++;
             }
-
+            
             const isLastTrick = trainingHands[0].length === 0 && trainingHands[1].length === 0;
             if (isLastTrick) {
                 if (winnerTeam === 0) roundScore.us += 10;
                 else roundScore.them += 10;
             }
-
+            
             const posMap = {0: 'bottom', 1: 'right', 2: 'top', 3: 'left'};
             const winnerPos = posMap[winnerIndex];
-
+            
             const trickCards = document.querySelectorAll('.trick-card');
             trickCards.forEach(cardEl => {
                 cardEl.style.transition = 'all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
@@ -2864,7 +2879,7 @@
             });
             
             if (isFirstTrick) isFirstTrick = false;
-
+            
             setTimeout(() => {
                 if (!isTrainingMode) return;
                 trickArea.innerHTML = '';
@@ -2879,21 +2894,21 @@
                 }
             }, 600);
         }
-
+        
         async function endRoundAndScore() {
             if (!isTrainingMode) return;
-
+            
             let usCardPoints = roundScore.us;
             let themCardPoints = roundScore.them;
-
+            
             if (tricksWon.us === 8) usCardPoints += 90;
             if (tricksWon.them === 8) themCardPoints += 90;
-
+            
             const callerTeamIdx = (lastBidderIndex % 2 === 0) ? 0 : 1;
             let usPoints = 0;
             let themPoints = 0;
             let isInside = false;
-
+            
             if (gameMultiplier > 1) {
                 if (usCardPoints > themCardPoints) {
                     let rounded = calculatePairPoints(usCardPoints + themCardPoints, 0);
@@ -2936,15 +2951,15 @@
                     }
                 }
             }
-
+            
             globalScore.us += usPoints;
             globalScore.them += themPoints;
-
+            
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
-
+            
             let insideText = isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
-
+            
             let summaryHtml = `
                 <div class="space-y-3 text-left">
                     <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${currentContract}</p>
@@ -2959,17 +2974,17 @@
                     <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
                 </div>
             `;
-
+            
             // КОРЕКЦИЯ 2: Изчакване за сигурен запис в базата данни (Leaderboard) при победа
             if (globalScore.us >= 151 || globalScore.them >= 151) {
                 let isWinner = globalScore.us >= 151;
                 let winnerText = isWinner ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
-
-                if (isWinner && currentUser) {
-                    const name = playerNameInput.value.trim() || 'Играч';
-                    await recordWinner(currentUser.uid, name, 1);
+                
+                if (isWinner) {
+                    const name = playerNameInput.value.trim() || localStorage.getItem('belote_name') || 'Играч';
+                    recordWinner(auth.currentUser ? auth.currentUser.uid : null, name, 1);
                 }
-
+                
                 showGameOverModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
                     globalScore = { us: 0, them: 0 };
                     document.getElementById('score-us').textContent = '0';
@@ -2986,7 +3001,7 @@
                 });
             }
         }
-
+        
         window.addEventListener('load', () => {
             initAuth();
         });
