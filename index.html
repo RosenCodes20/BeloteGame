@@ -788,7 +788,7 @@
             return `${d.getFullYear()}-W${weekNo}`;
         }
 
-        async function recordWinner(playerUid, playerName) {
+        async function recordWinner(playerUid, playerName, winPoints = 1) {
             if (!playerUid || playerUid.startsWith('bot_')) return;
             const weekKey = getWeekKey();
             const leaderboardRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players', playerUid);
@@ -797,13 +797,13 @@
                 const snap = await getDoc(leaderboardRef);
                 if (snap.exists()) {
                     await updateDoc(leaderboardRef, {
-                        wins: (snap.data().wins || 0) + 1,
+                        wins: (snap.data().wins || 0) + winPoints,
                         name: playerName
                     });
                 } else {
                     await setDoc(leaderboardRef, {
                         name: playerName,
-                        wins: 1
+                        wins: winPoints
                     });
                 }
             } catch (e) {
@@ -820,20 +820,31 @@
 
             const weekKey = getWeekKey();
             const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players');
-            const q = query(playersCol, orderBy('wins', 'desc'), limit(10));
 
             try {
-                const querySnap = await getDocs(q);
-                listEl.innerHTML = '';
-
-                if (querySnap.empty) {
-                    listEl.innerHTML = '<div class="text-center text-slate-400 py-4">Все още няма изиграни победи за тази седмица!</div>';
+                const baseSnap = await getDocs(playersCol);
+                
+                if (baseSnap.empty) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-6 bg-black/20 rounded-xl border border-white/5">
+                            <p class="text-slate-300 font-medium mb-1">Все още няма победи за тази седмица!</p>
+                            <p class="text-xs text-green-400">Спечели игра на Тренировка (+1т.) или Мултиплейър (+2т.) и стани №1 🚀</p>
+                        </div>`;
                     return;
                 }
 
+                let playersList = [];
+                baseSnap.forEach(docSnap => {
+                    playersList.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                playersList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+                playersList = playersList.slice(0, 10);
+
+                listEl.innerHTML = '';
+
                 let rank = 1;
-                querySnap.forEach(docSnap => {
-                    const data = docSnap.data();
+                playersList.forEach(data => {
                     let medal = `#${rank}`;
                     let bgStyle = 'bg-black/20 border-white/5';
                     if (rank === 1) { medal = '🥇'; bgStyle = 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'; }
@@ -854,7 +865,11 @@
                 });
             } catch (err) {
                 console.error(err);
-                listEl.innerHTML = '<div class="text-center text-red-400 py-4">Грешка при зареждане на класацията.</div>';
+                listEl.innerHTML = `
+                    <div class="text-center py-6 bg-black/20 rounded-xl border border-white/5">
+                        <p class="text-slate-300 font-medium mb-1">Все още няма победи за тази седмица!</p>
+                        <p class="text-xs text-green-400">Спечели игра и стани №1 🚀</p>
+                    </div>`;
             }
         }
 
@@ -1619,17 +1634,16 @@
                                             let newGlobalUs = (snapData.globalScore?.us || 0) + team0Points;
                                             let newGlobalThem = (snapData.globalScore?.them || 0) + team1Points;
 
-                                            // ПРОВЕРКА ЗА ПОБЕДИТЕЛ В ИГРАТА (Над 151т.)
                                             let matchWinnerTeam = -1;
                                             if (newGlobalUs >= 151 || newGlobalThem >= 151) {
                                                 matchWinnerTeam = newGlobalUs >= 151 ? 0 : 1;
                                                 
-                                                // Запис на победителите в класацията (Leaderboard)
+                                                // МУЛТИПЛЕЙЪР ПОБЕДА = +2 ПОБЕДИ В КЛАСАЦИЯТА
                                                 if (mySeatIndex === 0 && snapData.seats) {
                                                     const p1 = snapData.seats[matchWinnerTeam === 0 ? 0 : 1];
                                                     const p2 = snapData.seats[matchWinnerTeam === 0 ? 2 : 3];
-                                                    if (p1) recordWinner(p1.uid, p1.name);
-                                                    if (p2) recordWinner(p2.uid, p2.name);
+                                                    if (p1) recordWinner(p1.uid, p1.name, 2);
+                                                    if (p2) recordWinner(p2.uid, p2.name, 2);
                                                 }
                                             }
 
@@ -2782,7 +2796,15 @@
             `;
 
             if (globalScore.us >= 151 || globalScore.them >= 151) {
-                let winnerText = globalScore.us >= 151 ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
+                let isWinner = globalScore.us >= 151;
+                let winnerText = isWinner ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
+
+                // ТРЕНИРОВКА ПОБЕДА = +1 ПОБЕДА В КЛАСАЦИЯТА
+                if (isWinner && currentUser) {
+                    const name = playerNameInput.value.trim() || 'Играч';
+                    recordWinner(currentUser.uid, name, 1);
+                }
+
                 showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
