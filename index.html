@@ -781,6 +781,11 @@
         const values = ['7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
         let deck = [];
         
+        playerNameInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (val) localStorage.setItem('belote_name', val);
+        });
+
         function getWeekKey() {
             const d = new Date();
             d.setHours(0, 0, 0, 0);
@@ -794,7 +799,7 @@
             const nameToSave = playerName || localStorage.getItem('belote_name') || 'Играч';
             const weekKey = getWeekKey();
             
-            // 1. Локален запис (гарантиран 100% достъп)
+            // 1. Локален запис
             try {
                 let localWins = parseInt(localStorage.getItem(`belote_wins_${weekKey}`) || '0');
                 localWins += winPoints;
@@ -843,7 +848,6 @@
             
             let playersMap = {};
             
-            // Зареждане от Firebase
             try {
                 const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard', weekKey, 'players');
                 const baseSnap = await getDocs(playersCol);
@@ -855,7 +859,6 @@
                 console.warn("Онлайн класацията не може да се зареди, използва се локална:", err);
             }
             
-            // Ако играчът има локални победи, гарантираме показването му
             const myUid = auth.currentUser ? auth.currentUser.uid : 'my_local_id';
             if (myLocalWins > 0) {
                 if (!playersMap[myUid] || playersMap[myUid].wins < myLocalWins) {
@@ -923,14 +926,11 @@
             return contractStr.includes('Под коньете') || contractStr.includes('Без коз');
         }
         
-        // КОРЕКЦИЯ 1: Правилно закръгляне в Белота (Закръгляне в полза на отбора с по-висок резултат при остатък 4)
         function calculatePairPoints(ptsA, ptsB, isNoTrumpsMode = false, isCapotA = false, isCapotB = false) {
             if (isNoTrumpsMode) {
-                // При капо на Под коньете се дават 35 точки
                 if (isCapotA) return { scoreA: 35, scoreB: 0 };
                 if (isCapotB) return { scoreA: 0, scoreB: 35 };
                 
-                // Умножаване x2 за Под коньете (общо 260 точки = 26 врътки)
                 let effectiveA = ptsA * 2;
                 let effectiveB = ptsB * 2;
                 
@@ -954,7 +954,6 @@
                 return { scoreA: roundedA, scoreB: roundedB };
             }
             
-            // За Коз / Всичко коз
             let roundedA = Math.floor(ptsA / 10);
             let roundedB = Math.floor(ptsB / 10);
             const remA = ptsA % 10;
@@ -970,6 +969,7 @@
             
             return { scoreA: roundedA, scoreB: roundedB };
         }
+
         function getRoomPath(code) {
             return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
         }
@@ -1127,17 +1127,31 @@
             
             const pIdx = isTrainingMode ? 0 : mySeatIndex;
             if (selectedPublicNames.length > 0) {
-                showSpeechBubble(pIdx, selectedPublicNames.join(', '));
+                const declText = selectedPublicNames.join(', ');
+                showSpeechBubble(pIdx, declText);
+                
                 if (isTrainingMode) {
                     roundScore.us += addedPoints;
                 } else if (currentRoomCode) {
-                    const roomRef = getRoomPath(currentRoomCode);
-                    const snap = await getDoc(roomRef);
-                    if (snap.exists()) {
-                        let scores = snap.data().roundScore || { team0: 0, team1: 0 };
-                        if (mySeatIndex % 2 === 0) scores.team0 += addedPoints;
-                        else scores.team1 += addedPoints;
-                        await updateDoc(roomRef, { roundScore: scores });
+                    try {
+                        const roomRef = getRoomPath(currentRoomCode);
+                        const snap = await getDoc(roomRef);
+                        if (snap.exists()) {
+                            let scores = snap.data().roundScore || { team0: 0, team1: 0 };
+                            if (mySeatIndex % 2 === 0) scores.team0 += addedPoints;
+                            else scores.team1 += addedPoints;
+                            
+                            await updateDoc(roomRef, { 
+                                roundScore: scores,
+                                lastDeclaration: {
+                                    player: mySeatIndex,
+                                    text: declText,
+                                    time: Date.now()
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Грешка при запис на анонс:", e);
                     }
                 }
             }
@@ -1274,7 +1288,7 @@
                 bubble.textContent = text;
                 bubble.style.opacity = '1';
                 if (bubble.hideTimeout) clearTimeout(bubble.hideTimeout);
-                bubble.hideTimeout = setTimeout(() => { bubble.style.opacity = '0'; }, 2500);
+                bubble.hideTimeout = setTimeout(() => { bubble.style.opacity = '0'; }, 3500);
             }
         }
         
@@ -1477,6 +1491,8 @@
                     lastBidText: null,
                     lastBidPlayer: null,
                     lastBidderIndex: -1,
+                    botDeclsChecked: false,
+                    lastDeclaration: null,
                     globalScore: { us: 0, them: 0 },
                     roundScore: { team0: 0, team1: 0 },
                     tricksWon: { team0: 0, team1: 0 }
@@ -1576,6 +1592,40 @@
             return bid;
         }
         
+        async function checkBotDeclarationsMP(roomData) {
+            if (roomData.gamePhase === 'playing' && !isNoTrumps(roomData.currentContract) && !roomData.botDeclsChecked) {
+                const firstHumanIndex = roomData.seats.findIndex(s => s && !s.isBot);
+                if (mySeatIndex === firstHumanIndex) {
+                    let addedScores = { ...(roomData.roundScore || { team0: 0, team1: 0 }) };
+                    let lastBotDecl = null;
+
+                    for (let i = 0; i < 4; i++) {
+                        if (roomData.seats[i] && roomData.seats[i].isBot) {
+                            const hand = roomData.hands[`hand_${i}`] || [];
+                            const decls = detectDeclarations(hand);
+                            if (decls.length > 0) {
+                                const publicNames = decls.map(d => d.publicName).join(', ');
+                                const pts = decls.reduce((sum, d) => sum + d.points, 0);
+                                
+                                if (i % 2 === 0) addedScores.team0 += pts;
+                                else addedScores.team1 += pts;
+
+                                lastBotDecl = {
+                                    player: i,
+                                    text: publicNames,
+                                    time: Date.now()
+                                };
+                            }
+                        }
+                    }
+
+                    let updateData = { botDeclsChecked: true, roundScore: addedScores };
+                    if (lastBotDecl) updateData.lastDeclaration = lastBotDecl;
+                    await updateDoc(getRoomPath(currentRoomCode), updateData);
+                }
+            }
+        }
+
         function listenToRoom(code) {
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
                 if (!docSnap.exists()) {
@@ -1715,7 +1765,7 @@
                                             let isInside = false;
                                             
                                             let rounded = calculatePairPoints(team0Raw, team1Raw, noTrumpsMode, isCapotTeam0, isCapotTeam1);
-                                            
+
                                             if (multiplier > 1) {
                                                 if (team0Raw > team1Raw) {
                                                     team0Points = (rounded.scoreA + rounded.scoreB) * multiplier;
@@ -1805,19 +1855,19 @@
                         let insideText = summary.isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
                         
                         let summaryHtml = `
-                    <div class="space-y-3 text-left">
-                        <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${data.currentContract || ''}</p>
-                        ${insideText}
-                        <div class="flex justify-between text-slate-300 text-sm">
-                            <span>Взети точки от картите:</span>
-                            <span class="font-mono">Ние <b>${summary.team0Raw}</b> - Вие <b>${summary.team1Raw}</b></span>
-                        </div>
-                        <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
-                            <p class="font-bold text-green-400 text-center">Краен резултат: Ние +${summary.usPts} | Вие +${summary.themPts}</p>
-                        </div>
-                        <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
-                    </div>
-                `;
+                            <div class="space-y-3 text-left">
+                                <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${data.currentContract || ''}</p>
+                                ${insideText}
+                                <div class="flex justify-between text-slate-300 text-sm">
+                                    <span>Взети точки от картите:</span>
+                                    <span class="font-mono">Ние <b>${summary.team0Raw}</b> - Вие <b>${summary.team1Raw}</b></span>
+                                </div>
+                                <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
+                                    <p class="font-bold text-green-400 text-center">Краен резултат: Ние +${summary.usPts} | Вие +${summary.themPts}</p>
+                                </div>
+                                <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
+                            </div>
+                        `;
                         
                         if (summary.matchWinnerTeam !== -1) {
                             let winnerHeader = `<h3 class="text-xl font-bold text-center mb-2 text-yellow-400">🎉 ПОБЕДА ЗА ${summary.matchWinnerTeam === 0 ? 'ОТБОР НИЕ' : 'ОТБОР ВИЕ'}! 🎉</h3>`;
@@ -1846,6 +1896,8 @@
                                         lastBidText: null,
                                         lastBidPlayer: null,
                                         lastBidderIndex: -1,
+                                        botDeclsChecked: false,
+                                        lastDeclaration: null,
                                         globalScore: { us: 0, them: 0 },
                                         roundScore: { team0: 0, team1: 0 },
                                         tricksWon: { team0: 0, team1: 0 }
@@ -1879,6 +1931,8 @@
                                         lastBidText: null,
                                         lastBidPlayer: null,
                                         lastBidderIndex: -1,
+                                        botDeclsChecked: false,
+                                        lastDeclaration: null,
                                         roundScore: { team0: 0, team1: 0 },
                                         tricksWon: { team0: 0, team1: 0 }
                                     });
@@ -1924,7 +1978,27 @@
                     if (data.gamePhase === 'bidding' && data.lastBidText && data.lastBidPlayer !== undefined) {
                         showSpeechBubble(data.lastBidPlayer, getFullBidDisplay(data.lastBidText));
                     } else if (data.gamePhase === 'playing') {
-                        clearAllSpeechBubbles();
+                        checkBotDeclarationsMP(data);
+
+                        if (data.lastDeclaration && data.lastDeclaration.text) {
+                            const declAge = Date.now() - (data.lastDeclaration.time || 0);
+                            if (declAge < 4000) {
+                                showSpeechBubble(data.lastDeclaration.player, data.lastDeclaration.text);
+                                
+                                const logBar = document.getElementById('game-log-bar');
+                                const logText = document.getElementById('log-text');
+                                if (logBar && logText) {
+                                    logBar.classList.remove('hidden');
+                                    const seats = data.seats || [];
+                                    const pName = seats[data.lastDeclaration.player]?.name || 'Играч';
+                                    logText.textContent = `${pName} обяви: ${data.lastDeclaration.text}`;
+                                }
+                            } else {
+                                clearAllSpeechBubbles();
+                            }
+                        } else {
+                            clearAllSpeechBubbles();
+                        }
                     }
                     
                     if (data.gamePhase === 'bidding' && data.currentTurn === mySeatIndex) {
@@ -1961,7 +2035,6 @@
         
         function checkDeclarationsMP() {
             if (isFirstTrick && !hasShownDeclarations && mySeatIndex !== -1) {
-                // На "Под коньете" не се обявяват анонси
                 if (currentContract && isNoTrumps(currentContract)) return;
                 
                 const hand = trainingHands[mySeatIndex] || [];
@@ -2052,7 +2125,9 @@
                     lastBidPlayer: roomData.currentTurn,
                     lastBidderIndex: -1,
                     gameMultiplier: 1,
-                    kontraBidderIndex: -1
+                    kontraBidderIndex: -1,
+                    botDeclsChecked: false,
+                    lastDeclaration: null
                 });
                 return;
             }
@@ -2082,7 +2157,9 @@
                     lastBidPlayer: null,
                     lastBidderIndex: lastBidder,
                     gameMultiplier: mult,
-                    kontraBidderIndex: kontraBidder
+                    kontraBidderIndex: kontraBidder,
+                    botDeclsChecked: false,
+                    lastDeclaration: null
                 });
                 return;
             }
@@ -2188,7 +2265,9 @@
                             lastBidPlayer: mySeatIndex,
                             lastBidderIndex: -1,
                             gameMultiplier: 1,
-                            kontraBidderIndex: -1
+                            kontraBidderIndex: -1,
+                            botDeclsChecked: false,
+                            lastDeclaration: null
                         });
                         return;
                     }
@@ -2218,7 +2297,9 @@
                             lastBidPlayer: null,
                             lastBidderIndex: lastBidder,
                             gameMultiplier: mult,
-                            kontraBidderIndex: kontraBidder
+                            kontraBidderIndex: kontraBidder,
+                            botDeclsChecked: false,
+                            lastDeclaration: null
                         });
                         return;
                     }
@@ -2950,17 +3031,16 @@
             let themPoints = 0;
             let isInside = false;
             
+            let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
+
             if (gameMultiplier > 1) {
                 if (usCardPoints > themCardPoints) {
-                    let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                     usPoints = (rounded.scoreA + rounded.scoreB) * gameMultiplier;
                     themPoints = 0;
                 } else if (themCardPoints > usCardPoints) {
-                    let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                     themPoints = (rounded.scoreA + rounded.scoreB) * gameMultiplier;
                     usPoints = 0;
                 } else {
-                    let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                     usPoints = rounded.scoreA * gameMultiplier;
                     themPoints = rounded.scoreB * gameMultiplier;
                 }
@@ -2970,24 +3050,20 @@
             } else {
                 if (callerTeamIdx === 0) {
                     if (usCardPoints > themCardPoints) {
-                        let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                         usPoints = rounded.scoreA;
                         themPoints = rounded.scoreB;
                     } else {
                         isInside = true;
                         usPoints = 0;
-                        let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                         themPoints = rounded.scoreA + rounded.scoreB;
                     }
                 } else {
                     if (themCardPoints > usCardPoints) {
-                        let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                         usPoints = rounded.scoreA;
                         themPoints = rounded.scoreB;
                     } else {
                         isInside = true;
                         themPoints = 0;
-                        let rounded = calculatePairPoints(usCardPoints, themCardPoints, noTrumpsMode, isCapotUs, isCapotThem);
                         usPoints = rounded.scoreA + rounded.scoreB;
                     }
                 }
