@@ -1332,7 +1332,6 @@
 
         let roomDealAnimated = false;
         let lastMultiplayerPhase = 'waiting';
-        let isClearingTrick = false;
 
         function getFullBidDisplay(bid) {
             if (bid === '♣') return 'Скапия ♣';
@@ -1376,8 +1375,8 @@
 
                     renderTrickArea();
 
-                    if (currentTrick.length === 4 && !isClearingTrick && mySeatIndex === 0) {
-                        isClearingTrick = true;
+                    // АВТОМАТИЧНО ИЗЧИСТВАНЕ НА ВЗЯТКАТА СЛЕД 4-ТАТА КАРТА В МУЛТИПЛЕЙЪР
+                    if (currentTrick.length === 4 && mySeatIndex === 0) {
                         setTimeout(async () => {
                             const ledSuit = currentTrick[0].card.suit;
                             let winnerPlay = currentTrick[0];
@@ -1395,7 +1394,6 @@
                                 currentTrick: [],
                                 currentTurn: winnerPlay.player
                             });
-                            isClearingTrick = false;
                         }, 1800);
                     }
 
@@ -2032,12 +2030,12 @@
         }
 
         function getValidCards(hand, trick, contract) {
-            if (trick.length === 0) return [...hand];
+            if (!trick || trick.length === 0) return [...hand];
             
             const ledSuit = trick[0].card.suit;
-            const isAllTrumps = contract.includes('На коньете');
-            const isNoTrumps = contract.includes('Под коньете');
-            const trumpSuit = (!isAllTrumps && !isNoTrumps) ? contract.charAt(contract.length - 1) : null;
+            const isAllTrumps = contract ? contract.includes('На коньете') : false;
+            const isNoTrumps = contract ? contract.includes('Под коньете') : false;
+            const trumpSuit = (contract && !isAllTrumps && !isNoTrumps) ? contract.charAt(contract.length - 1) : null;
             
             const hasLedSuit = hand.some(c => c.suit === ledSuit);
             const hasTrump = trumpSuit ? hand.some(c => c.suit === trumpSuit) : false;
@@ -2048,7 +2046,7 @@
             let highestTrumpPower = -1;
 
             trick.forEach(play => {
-                const power = getCardPower(play.card, ledSuit, contract);
+                const power = getCardPower(play.card, ledSuit, contract || '');
                 if (power > highestPower) {
                     highestPower = power;
                     winnerIndex = play.player;
@@ -2069,7 +2067,7 @@
                 const mustOvertrump = isAllTrumps || ledSuit === trumpSuit;
                 
                 if (mustOvertrump) {
-                    const higherCards = ledCards.filter(c => getCardPower(c, ledSuit, contract) > highestLedPower);
+                    const higherCards = ledCards.filter(c => getCardPower(c, ledSuit, contract || '') > highestLedPower);
                     if (higherCards.length > 0) return higherCards;
                 }
                 return ledCards;
@@ -2080,7 +2078,7 @@
                     const trumpCards = hand.filter(c => c.suit === trumpSuit);
                     if (!partnerIsWinning) {
                         if (highestTrumpPower > -1) {
-                            const higherTrumps = trumpCards.filter(c => getCardPower(c, ledSuit, contract) > highestTrumpPower);
+                            const higherTrumps = trumpCards.filter(c => getCardPower(c, ledSuit, contract || '') > highestTrumpPower);
                             if (higherTrumps.length > 0) return higherTrumps;
                         }
                         return trumpCards;
@@ -2092,27 +2090,22 @@
             }
         }
 
-        // КОРИГИРАНА ЛОГИКА ЗА ИЗЧИСЛЯВАНЕ И КЛИКВАНЕ НА ВАЛИДНИ КАРТИ
+        // ДИРЕКТНО ВЗИМАНЕ НА ЛОГИКАТА ЗА ПОДАВАНЕ ОТ ТРЕНИРОВКАТА
         function renderPlayerHand() {
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
             
             const targetIdx = isTrainingMode ? 0 : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
-            let validCards = [];
             
             let isMyTurnToPlay = isTrainingMode ? (gamePhase === 'playing' && currentTurn === 0) : (gamePhase === 'playing' && currentTurn === mySeatIndex);
-
-            if (isMyTurnToPlay) {
-                validCards = getValidCards(hand, currentTrick, currentContract || '');
-            } else {
-                validCards = [...hand];
-            }
+            
+            // ВИНАГИ РАЗРЕШАВАМЕ ВАЛИДИРАНЕТО ЛОКАЛНО ЗА БЪРЗОДЕЙСТВИЕ
+            let validCards = isMyTurnToPlay ? getValidCards(hand, currentTrick, currentContract || '') : hand;
             
             const isMobile = window.innerWidth <= 768;
             
             hand.forEach((card, index) => {
-                // Сравняваме стойностите вместо референциите
                 const isValid = validCards.some(vc => vc.suit === card.suit && vc.val === card.val);
                 
                 const cardEl = document.createElement('div');
@@ -2136,9 +2129,7 @@
                 
                 if (isMyTurnToPlay && isValid) {
                     cardEl.addEventListener('click', () => {
-                        if (gamePhase === 'playing' && isMyTurnToPlay && currentTrick.length < 4) {
-                            playCard(isTrainingMode ? 0 : mySeatIndex, index);
-                        }
+                        playCard(isTrainingMode ? 0 : mySeatIndex, index);
                     });
                 }
                 
@@ -2147,54 +2138,10 @@
         }
 
         async function playCard(playerIndex, cardIndex, forceDeclareBelote = null) {
+            const playedCard = trainingHands[playerIndex][cardIndex];
+            if (!playedCard) return;
+
             if (isTrainingMode) {
-                const playedCard = trainingHands[playerIndex][cardIndex];
-                let isBeloteSituation = false;
-
-                if (currentContract && !currentContract.includes('Под коньете')) {
-                    const isAllTrumps = currentContract.includes('На коньете');
-                    const trumpSuit = (!isAllTrumps) ? currentContract.charAt(currentContract.length - 1) : null;
-                    
-                    let isValidBeloteSuit = true;
-                    if (isAllTrumps && currentTrick.length > 0) {
-                        const ledSuit = currentTrick[0].card.suit;
-                        if (playedCard.suit !== ledSuit) {
-                            isValidBeloteSuit = false;
-                        }
-                    }
-
-                    if (isValidBeloteSuit && (playedCard.val === 'K' || playedCard.val === 'Q')) {
-                        const isTrumpCard = isAllTrumps || (playedCard.suit === trumpSuit);
-                        
-                        if (isTrumpCard) {
-                            const otherVal = playedCard.val === 'K' ? 'Q' : 'K';
-                            const hasOther = trainingHands[playerIndex].some(c => c.val === otherVal && c.suit === playedCard.suit);
-                            if (hasOther) isBeloteSituation = true;
-                        }
-                    }
-                }
-
-                if (isBeloteSituation && playerIndex === 0 && forceDeclareBelote === null) {
-                    showBeloteModal(cardIndex);
-                    return;
-                }
-
-                let declareBelote = false;
-                if (isBeloteSituation) {
-                    declareBelote = (playerIndex === 0) ? (forceDeclareBelote === true) : true;
-                }
-
-                if (declareBelote) {
-                    if (playerIndex % 2 === 0) belotePointsRound.us += 20;
-                    else belotePointsRound.them += 20;
-
-                    showSpeechBubble(playerIndex, 'Белот');
-                }
-
-                if (isFirstTrick && playerIndex !== 0) {
-                    processAiDeclarations(playerIndex);
-                }
-
                 trainingHands[playerIndex].splice(cardIndex, 1);
                 currentTrick.push({ player: playerIndex, card: playedCard });
                 
@@ -2211,19 +2158,17 @@
                     handlePlayTurn();
                 }
             } else if (currentRoomCode) {
+                // ЛОКАЛНО ОБНОВЯВАНЕ ВЕДНАГА (КАКТО В ТРЕНИРОВКАТА)
+                trainingHands[mySeatIndex].splice(cardIndex, 1);
+                renderPlayerHand();
+
                 const roomRef = getRoomPath(currentRoomCode);
                 const docSnap = await getDoc(roomRef);
                 if (!docSnap.exists()) return;
                 const roomData = docSnap.data();
 
-                const myHand = roomData.hands[`hand_${mySeatIndex}`] || [];
-                const playedCard = myHand[cardIndex];
-                if (!playedCard) return;
-
-                const updatedHand = myHand.filter((_, idx) => idx !== cardIndex);
-                
                 let updatePayload = {};
-                updatePayload[`hands.hand_${mySeatIndex}`] = updatedHand;
+                updatePayload[`hands.hand_${mySeatIndex}`] = trainingHands[mySeatIndex];
                 
                 const newTrick = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
                 updatePayload['currentTrick'] = newTrick;
