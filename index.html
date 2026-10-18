@@ -656,9 +656,11 @@
         <div class="glass-panel modal-content rounded-2xl p-6 md:p-8 max-w-md w-full text-center border border-white/10 shadow-2xl">
             <h2 id="modal-title" class="text-2xl font-bold text-white mb-4 drop-shadow-sm">Съобщение</h2>
             <div id="modal-msg" class="text-slate-200 mb-8 text-left space-y-3 text-sm md:text-base bg-black/20 p-4 rounded-xl">Текст</div>
-            <button id="modal-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/30">
-                Продължи
-            </button>
+            <div id="modal-buttons" class="flex gap-3 justify-center">
+                <button id="modal-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/30">
+                    Продължи
+                </button>
+            </div>
         </div>
     </div>
 
@@ -921,10 +923,40 @@
         function showModal(title, msgHtml, callback) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-msg').innerHTML = msgHtml;
+            const btnContainer = document.getElementById('modal-buttons');
+            btnContainer.innerHTML = `
+                <button id="modal-btn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-green-500/30">
+                    Продължи
+                </button>
+            `;
             modal.style.display = 'flex';
             document.getElementById('modal-btn').onclick = () => {
                 modal.style.display = 'none';
                 if(callback) callback();
+            };
+        }
+
+        function showGameOverModal(title, msgHtml, onRestart, onExit) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-msg').innerHTML = msgHtml;
+            const btnContainer = document.getElementById('modal-buttons');
+            btnContainer.innerHTML = `
+                <button id="modal-btn-restart" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg">
+                    Нова игра 🔄
+                </button>
+                <button id="modal-btn-exit" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all border border-slate-500/40">
+                    Изход
+                </button>
+            `;
+            modal.style.display = 'flex';
+
+            document.getElementById('modal-btn-restart').onclick = () => {
+                modal.style.display = 'none';
+                if (onRestart) onRestart();
+            };
+            document.getElementById('modal-btn-exit').onclick = () => {
+                modal.style.display = 'none';
+                if (onExit) onExit();
             };
         }
 
@@ -1511,6 +1543,8 @@
                     currentContract = data.currentContract;
                     currentContractRaw = data.currentContractRaw;
                     currentTrick = data.currentTrick || [];
+                    gameMultiplier = data.gameMultiplier || 1;
+                    kontraBidderIndex = data.kontraBidderIndex !== undefined ? data.kontraBidderIndex : -1;
 
                     if (data.gamePhase === 'playing' && data.currentContract) {
                         let multStr = (data.gameMultiplier === 2) ? ' (КОНТРА)' : (data.gameMultiplier === 4) ? ' (РЕКОНТРА)' : '';
@@ -1611,23 +1645,41 @@
                                             let team1Points = 0;
                                             let isInside = false;
 
-                                            if (callerTeamIdx === 0) {
+                                            // ЛОГИКА ЗА КОНТРА / РЕКОНТРА: Всички точки за отбора победител
+                                            if (multiplier > 1) {
                                                 if (team0Raw > team1Raw) {
+                                                    team0Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                    team1Points = 0;
+                                                } else if (team1Raw > team0Raw) {
+                                                    team1Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                    team0Points = 0;
+                                                } else {
+                                                    // При равенство в точките при контра
                                                     team0Points = roundBelotePoints(team0Raw) * multiplier;
                                                     team1Points = roundBelotePoints(team1Raw) * multiplier;
-                                                } else {
+                                                }
+                                                if ((callerTeamIdx === 0 && team1Raw >= team0Raw) || (callerTeamIdx === 1 && team0Raw >= team1Raw)) {
                                                     isInside = true;
-                                                    team0Points = 0;
-                                                    team1Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
                                                 }
                                             } else {
-                                                if (team1Raw > team0Raw) {
-                                                    team0Points = roundBelotePoints(team0Raw) * multiplier;
-                                                    team1Points = roundBelotePoints(team1Raw) * multiplier;
+                                                if (callerTeamIdx === 0) {
+                                                    if (team0Raw > team1Raw) {
+                                                        team0Points = roundBelotePoints(team0Raw);
+                                                        team1Points = roundBelotePoints(team1Raw);
+                                                    } else {
+                                                        isInside = true;
+                                                        team0Points = 0;
+                                                        team1Points = roundBelotePoints(team0Raw + team1Raw);
+                                                    }
                                                 } else {
-                                                    isInside = true;
-                                                    team1Points = 0;
-                                                    team0Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                    if (team1Raw > team0Raw) {
+                                                        team0Points = roundBelotePoints(team0Raw);
+                                                        team1Points = roundBelotePoints(team1Raw);
+                                                    } else {
+                                                        isInside = true;
+                                                        team1Points = 0;
+                                                        team0Points = roundBelotePoints(team0Raw + team1Raw);
+                                                    }
                                                 }
                                             }
 
@@ -1638,7 +1690,6 @@
                                             if (newGlobalUs >= 151 || newGlobalThem >= 151) {
                                                 matchWinnerTeam = newGlobalUs >= 151 ? 0 : 1;
                                                 
-                                                // МУЛТИПЛЕЙЪР ПОБЕДА = +2 ПОБЕДИ В КЛАСАЦИЯТА
                                                 if (mySeatIndex === 0 && snapData.seats) {
                                                     const p1 = snapData.seats[matchWinnerTeam === 0 ? 0 : 1];
                                                     const p2 = snapData.seats[matchWinnerTeam === 0 ? 2 : 3];
@@ -1683,13 +1734,9 @@
                     if (data.gamePhase === 'round_ended' && !data.hasShownSummary) {
                         const summary = data.lastRoundSummary || { usPts: 0, themPts: 0, team0Raw: 0, team1Raw: 0, isInside: false, matchWinnerTeam: -1 };
                         let insideText = summary.isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
-                        let winnerHeader = summary.matchWinnerTeam !== -1 
-                            ? `<h3 class="text-xl font-bold text-center mb-2 text-yellow-400">🎉 ПОБЕДА ЗА ${summary.matchWinnerTeam === 0 ? 'ОТБОР НИЕ' : 'ОТБОР ВИЕ'}! 🎉</h3>` 
-                            : '';
-
+                        
                         let summaryHtml = `
                             <div class="space-y-3 text-left">
-                                ${winnerHeader}
                                 <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${data.currentContract || ''}</p>
                                 ${insideText}
                                 <div class="flex justify-between text-slate-300 text-sm">
@@ -1703,41 +1750,73 @@
                             </div>
                         `;
 
-                        showModal("Край на врътката", summaryHtml, async () => {
-                            if (mySeatIndex === 0) { 
-                                initDeck();
-                                let newDealer = (data.dealerIndex + 1) % 4;
-                                let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
+                        // СПИРАНЕ ПРИ 151+ ТОЧКИ И ПОПИТВАНЕ ЗА НОВА ИГРА
+                        if (summary.matchWinnerTeam !== -1) {
+                            let winnerHeader = `<h3 class="text-xl font-bold text-center mb-2 text-yellow-400">🎉 ПОБЕДА ЗА ${summary.matchWinnerTeam === 0 ? 'ОТБОР НИЕ' : 'ОТБОР ВИЕ'}! 🎉</h3>`;
+                            
+                            showGameOverModal(`КРАЙ НА ИГРАТА`, winnerHeader + summaryHtml, async () => {
+                                if (mySeatIndex === 0) {
+                                    initDeck();
+                                    let newDealer = (data.dealerIndex + 1) % 4;
+                                    let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
 
-                                let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
-                                for (let r = 0; r < 5; r++) {
-                                    for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
+                                    let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
+                                    for (let r = 0; r < 5; r++) {
+                                        for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
+                                    }
+
+                                    await updateDoc(getRoomPath(currentRoomCode), {
+                                        dealerIndex: newDealer,
+                                        currentTurn: (newDealer + 1) % 4,
+                                        hands: playerHands,
+                                        deck: deck,
+                                        gamePhase: 'bidding',
+                                        currentContract: null,
+                                        currentContractRaw: null,
+                                        consecutivePasses: 0,
+                                        currentTrick: [],
+                                        lastBidText: null,
+                                        lastBidPlayer: null,
+                                        lastBidderIndex: -1,
+                                        globalScore: { us: 0, them: 0 },
+                                        roundScore: { team0: 0, team1: 0 },
+                                        tricksWon: { team0: 0, team1: 0 }
+                                    });
                                 }
+                            }, () => {
+                                leaveRoomAndReset();
+                            });
+                        } else {
+                            showModal("Край на врътката", summaryHtml, async () => {
+                                if (mySeatIndex === 0) { 
+                                    initDeck();
+                                    let newDealer = (data.dealerIndex + 1) % 4;
+                                    let dealOrder = [(newDealer + 1) % 4, (newDealer + 2) % 4, (newDealer + 3) % 4, newDealer];
 
-                                let updatePayload = {
-                                    dealerIndex: newDealer,
-                                    currentTurn: (newDealer + 1) % 4,
-                                    hands: playerHands,
-                                    deck: deck,
-                                    gamePhase: 'bidding',
-                                    currentContract: null,
-                                    currentContractRaw: null,
-                                    consecutivePasses: 0,
-                                    currentTrick: [],
-                                    lastBidText: null,
-                                    lastBidPlayer: null,
-                                    lastBidderIndex: -1,
-                                    roundScore: { team0: 0, team1: 0 },
-                                    tricksWon: { team0: 0, team1: 0 }
-                                };
+                                    let playerHands = { hand_0: [], hand_1: [], hand_2: [], hand_3: [] };
+                                    for (let r = 0; r < 5; r++) {
+                                        for (let p of dealOrder) playerHands[`hand_${p}`].push(deck.pop());
+                                    }
 
-                                if (summary.matchWinnerTeam !== -1) {
-                                    updatePayload.globalScore = { us: 0, them: 0 };
+                                    await updateDoc(getRoomPath(currentRoomCode), {
+                                        dealerIndex: newDealer,
+                                        currentTurn: (newDealer + 1) % 4,
+                                        hands: playerHands,
+                                        deck: deck,
+                                        gamePhase: 'bidding',
+                                        currentContract: null,
+                                        currentContractRaw: null,
+                                        consecutivePasses: 0,
+                                        currentTrick: [],
+                                        lastBidText: null,
+                                        lastBidPlayer: null,
+                                        lastBidderIndex: -1,
+                                        roundScore: { team0: 0, team1: 0 },
+                                        tricksWon: { team0: 0, team1: 0 }
+                                    });
                                 }
-
-                                await updateDoc(getRoomPath(currentRoomCode), updatePayload);
-                            }
-                        });
+                            });
+                        }
                     }
 
                     if (data.hands && mySeatIndex !== -1) {
@@ -1857,14 +1936,25 @@
             let newContractRaw = roomData.currentContractRaw;
             let passes = roomData.consecutivePasses || 0;
             let lastBidder = roomData.lastBidderIndex !== undefined ? roomData.lastBidderIndex : -1;
+            let mult = roomData.gameMultiplier || 1;
+            let kontraBidder = roomData.kontraBidderIndex !== undefined ? roomData.kontraBidderIndex : -1;
 
             if (bid === 'Пазас') {
                 passes++;
+            } else if (bid === 'Контра') {
+                mult = 2;
+                kontraBidder = roomData.currentTurn;
+                passes = 0;
+            } else if (bid === 'Реконтра') {
+                mult = 4;
+                passes = 0;
             } else {
                 newContract = getFullBidDisplay(bid);
                 newContractRaw = bid;
                 passes = 0;
                 lastBidder = roomData.currentTurn;
+                mult = 1;
+                kontraBidder = -1;
             }
 
             let nextTurn = (roomData.currentTurn + 1) % 4;
@@ -1889,7 +1979,9 @@
                     currentContractRaw: null,
                     lastBidText: 'Пазас (Ново раздаване)',
                     lastBidPlayer: roomData.currentTurn,
-                    lastBidderIndex: -1
+                    lastBidderIndex: -1,
+                    gameMultiplier: 1,
+                    kontraBidderIndex: -1
                 });
                 return;
             }
@@ -1917,7 +2009,9 @@
                     currentTurn: (roomData.dealerIndex + 1) % 4,
                     lastBidText: null,
                     lastBidPlayer: null,
-                    lastBidderIndex: lastBidder
+                    lastBidderIndex: lastBidder,
+                    gameMultiplier: mult,
+                    kontraBidderIndex: kontraBidder
                 });
                 return;
             }
@@ -1929,7 +2023,9 @@
                 consecutivePasses: passes,
                 lastBidText: bid,
                 lastBidPlayer: roomData.currentTurn,
-                lastBidderIndex: lastBidder
+                lastBidderIndex: lastBidder,
+                gameMultiplier: mult,
+                kontraBidderIndex: kontraBidder
             });
         }
 
@@ -1973,14 +2069,25 @@
                     let newContractRaw = roomData.currentContractRaw;
                     let passes = roomData.consecutivePasses || 0;
                     let lastBidder = roomData.lastBidderIndex !== undefined ? roomData.lastBidderIndex : -1;
+                    let mult = roomData.gameMultiplier || 1;
+                    let kontraBidder = roomData.kontraBidderIndex !== undefined ? roomData.kontraBidderIndex : -1;
 
                     if (bid === 'Пазас') {
                         passes++;
+                    } else if (bid === 'Контра') {
+                        mult = 2;
+                        kontraBidder = mySeatIndex;
+                        passes = 0;
+                    } else if (bid === 'Реконтра') {
+                        mult = 4;
+                        passes = 0;
                     } else {
                         newContract = getFullBidDisplay(bid);
                         newContractRaw = bid;
                         passes = 0;
                         lastBidder = mySeatIndex;
+                        mult = 1;
+                        kontraBidder = -1;
                     }
 
                     let nextTurn = (currentTurn + 1) % 4;
@@ -2005,7 +2112,9 @@
                             currentContractRaw: null,
                             lastBidText: 'Пазас (Ново раздаване)',
                             lastBidPlayer: mySeatIndex,
-                            lastBidderIndex: -1
+                            lastBidderIndex: -1,
+                            gameMultiplier: 1,
+                            kontraBidderIndex: -1
                         });
                         return;
                     }
@@ -2033,7 +2142,9 @@
                             currentTurn: (roomData.dealerIndex + 1) % 4,
                             lastBidText: null,
                             lastBidPlayer: null,
-                            lastBidderIndex: lastBidder
+                            lastBidderIndex: lastBidder,
+                            gameMultiplier: mult,
+                            kontraBidderIndex: kontraBidder
                         });
                         return;
                     }
@@ -2045,7 +2156,9 @@
                         consecutivePasses: passes,
                         lastBidText: bid,
                         lastBidPlayer: mySeatIndex,
-                        lastBidderIndex: lastBidder
+                        lastBidderIndex: lastBidder,
+                        gameMultiplier: mult,
+                        kontraBidderIndex: kontraBidder
                     });
                 }
             });
@@ -2429,6 +2542,7 @@
             }
         }
 
+        // КОРЕКЦИЯ 1: Белот може да се иска само от козовата боя
         function checkBeloteEligibility(playerIndex, cardIndex) {
             const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
@@ -2443,7 +2557,15 @@
 
             const allTrumps = isAllTrumps(currentContract);
             const trumpSuit = getContractTrumpSuit(currentContract);
-            const isTrump = allTrumps || (trumpSuit && playedCard.suit === trumpSuit);
+            
+            let isTrump = false;
+            if (allTrumps) {
+                // При "На коньете" белот може да се викне само ако картите отговорят на боята на първата изиграна карта
+                const ledSuit = currentTrick.length > 0 ? currentTrick[0].card.suit : playedCard.suit;
+                isTrump = (playedCard.suit === ledSuit);
+            } else if (trumpSuit) {
+                isTrump = (playedCard.suit === trumpSuit);
+            }
 
             if (!isTrump) return false;
 
@@ -2752,23 +2874,40 @@
             let themPoints = 0;
             let isInside = false;
 
-            if (callerTeamIdx === 0) {
+            // КОРЕКЦИЯ 2: При Контра (x2) или Реконтра (x4) всички точки отиват при отбора победител
+            if (gameMultiplier > 1) {
                 if (usCardPoints > themCardPoints) {
+                    usPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                    themPoints = 0;
+                } else if (themCardPoints > usCardPoints) {
+                    themPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                    usPoints = 0;
+                } else {
                     usPoints = roundBelotePoints(usCardPoints) * gameMultiplier;
                     themPoints = roundBelotePoints(themCardPoints) * gameMultiplier;
-                } else {
+                }
+                if ((callerTeamIdx === 0 && themCardPoints >= usCardPoints) || (callerTeamIdx === 1 && usCardPoints >= themCardPoints)) {
                     isInside = true;
-                    usPoints = 0;
-                    themPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
                 }
             } else {
-                if (themCardPoints > usCardPoints) {
-                    usPoints = roundBelotePoints(usCardPoints) * gameMultiplier;
-                    themPoints = roundBelotePoints(themCardPoints) * gameMultiplier;
+                if (callerTeamIdx === 0) {
+                    if (usCardPoints > themCardPoints) {
+                        usPoints = roundBelotePoints(usCardPoints);
+                        themPoints = roundBelotePoints(themCardPoints);
+                    } else {
+                        isInside = true;
+                        usPoints = 0;
+                        themPoints = roundBelotePoints(usCardPoints + themCardPoints);
+                    }
                 } else {
-                    isInside = true;
-                    themPoints = 0;
-                    usPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                    if (themCardPoints > usCardPoints) {
+                        usPoints = roundBelotePoints(usCardPoints);
+                        themPoints = roundBelotePoints(themCardPoints);
+                    } else {
+                        isInside = true;
+                        themPoints = 0;
+                        usPoints = roundBelotePoints(usCardPoints + themCardPoints);
+                    }
                 }
             }
 
@@ -2795,19 +2934,24 @@
                 </div>
             `;
 
+            // КОРЕКЦИЯ 3: Спиране при 151+ точки и попитане за нова игра
             if (globalScore.us >= 151 || globalScore.them >= 151) {
                 let isWinner = globalScore.us >= 151;
                 let winnerText = isWinner ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
 
-                // ТРЕНИРОВКА ПОБЕДА = +1 ПОБЕДА В КЛАСАЦИЯТА
                 if (isWinner && currentUser) {
                     const name = playerNameInput.value.trim() || 'Играч';
                     recordWinner(currentUser.uid, name, 1);
                 }
 
-                showModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
+                showGameOverModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
+                    globalScore = { us: 0, them: 0 };
+                    document.getElementById('score-us').textContent = '0';
+                    document.getElementById('score-them').textContent = '0';
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
+                }, () => {
+                    leaveRoomAndReset();
                 });
             } else {
                 showModal("Край на рунда", summaryHtml, () => {
