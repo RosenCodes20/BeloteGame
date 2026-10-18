@@ -327,7 +327,7 @@
             }
 
             #scoreboard {
-                top: env(safe-area-inset-top, 8px) !important;
+                top: calc(env(safe-area-inset-top, 8px) + 55px) !important;
                 left: 10px !important;
                 transform: none !important;
                 padding: 4px 10px !important;
@@ -348,7 +348,7 @@
             }
 
             #game-log-bar { 
-                top: calc(env(safe-area-inset-top, 8px) + 105px) !important; 
+                top: calc(env(safe-area-inset-top, 8px) + 115px) !important; 
                 font-size: 11px !important; 
                 padding: 4px 14px !important;
                 background: rgba(0, 0, 0, 0.85);
@@ -551,7 +551,8 @@
     </div>
 
     <div id="game-view" class="w-full h-full flex flex-col p-4 relative">
-        <div id="scoreboard" class="absolute top-4 left-4 glass-panel border border-green-500/50 rounded-xl p-3 z-50 flex gap-5 hidden">
+        <!-- ПОПРАВКА 1: Преместено top-16 в мобилния изглед, за да не крие кода на стаята -->
+        <div id="scoreboard" class="absolute top-16 left-4 glass-panel border border-green-500/50 rounded-xl p-3 z-50 flex gap-5 hidden">
             <div class="text-center min-w-[50px]">
                 <div class="text-[10px] text-green-400 font-black tracking-widest">НИЕ</div>
                 <div id="score-us" class="text-2xl text-white font-bold leading-none mt-1">0</div>
@@ -974,6 +975,7 @@
             lastBidderIndex = -1;
             callerTeam = -1;
             mySeatIndex = -1;
+            roomDealAnimated = false;
 
             if (trickArea) trickArea.innerHTML = '';
             const handContainer = document.getElementById('my-hand');
@@ -1333,6 +1335,14 @@
         let lastMultiplayerPhase = 'waiting';
         let isClearingTrick = false;
 
+        function getFullBidDisplay(bid) {
+            if (bid === '♣') return 'Скапия ♣';
+            if (bid === '♦') return 'Кало ♦';
+            if (bid === '♥') return 'Пука ❤️';
+            if (bid === '♠') return 'Пипа ♠';
+            return bid;
+        }
+
         function listenToRoom(code) {
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
                 if (!docSnap.exists()) {
@@ -1367,7 +1377,6 @@
 
                     renderTrickArea();
 
-                    // АВТОМАТИЧНО ИЗЧИСТВАНЕ НА ВЗЯТКАТА В МУЛТИПЛЕЙЪР СЛЕД 4-ТАТА КАРТА
                     if (currentTrick.length === 4 && !isClearingTrick && mySeatIndex === 0) {
                         isClearingTrick = true;
                         setTimeout(async () => {
@@ -1395,6 +1404,7 @@
                         trainingHands[mySeatIndex] = data.hands[`hand_${mySeatIndex}`] || [];
                         sortPlayerHand();
 
+                        // ПОПРАВКА 3: Гарантирана анимация при първите 5 карти
                         if (!roomDealAnimated) {
                             roomDealAnimated = true;
                             let initialDealer = data.dealerIndex;
@@ -1420,8 +1430,9 @@
 
                     lastMultiplayerPhase = data.gamePhase;
 
+                    // ПОПРАВКА 2: Изписване на пълно име с икона (напр. Пука ❤️)
                     if (data.lastBidText && data.lastBidPlayer !== undefined) {
-                        showSpeechBubble(data.lastBidPlayer, data.lastBidText);
+                        showSpeechBubble(data.lastBidPlayer, getFullBidDisplay(data.lastBidText));
                     }
 
                     if (data.gamePhase === 'bidding' && data.currentTurn === mySeatIndex) {
@@ -1492,7 +1503,7 @@
             if (bid === 'Пазас') {
                 passes++;
             } else {
-                newContract = bid;
+                newContract = getFullBidDisplay(bid);
                 newContractRaw = bid;
                 passes = 0;
                 lastBidder = roomData.currentTurn;
@@ -1607,7 +1618,7 @@
                     if (bid === 'Пазас') {
                         passes++;
                     } else {
-                        newContract = bid;
+                        newContract = getFullBidDisplay(bid);
                         newContractRaw = bid;
                         passes = 0;
                         lastBidder = mySeatIndex;
@@ -1883,14 +1894,8 @@
             if (!isTrainingMode) return;
             const playerNames = ['Вие', 'Изток (Бот)', 'Север (Бот)', 'Запад (Бот)'];
             
-            let displayBid = bid;
-            if (bid === '♣') displayBid = 'Скапия ♣';
-            else if (bid === '♦') displayBid = 'Кало ♦';
-            else if (bid === '♥') displayBid = 'Пука ❤️';
-            else if (bid === '♠') displayBid = 'Пипа ♠';
-            else if (bid === 'Под коньете') displayBid = 'Под коньете';
-            else if (bid === 'На коньете') displayBid = 'На коньете';
-            else if (bid === 'Пазас') displayBid = 'Пазас';
+            let displayBid = getFullBidDisplay(bid);
+            if (bid === 'Пазас') displayBid = 'Пазас';
             
             showSpeechBubble(playerIndex, displayBid);
 
@@ -2090,6 +2095,7 @@
             }
         }
 
+        // ПОПРАВКА 4: Прецизно съответствие на кликнатите карти с играта
         function renderPlayerHand() {
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
@@ -2109,7 +2115,7 @@
             const isMobile = window.innerWidth <= 768;
             
             hand.forEach((card, index) => {
-                const isValid = validCards.includes(card);
+                const isValid = validCards.some(vc => vc.suit === card.suit && vc.val === card.val);
                 const cardEl = document.createElement('div');
                 cardEl.className = `card ${card.color} ${isMyTurnToPlay && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
                 
