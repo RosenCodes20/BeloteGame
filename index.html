@@ -1942,7 +1942,9 @@
                     }
                     
                     if (data.hands && mySeatIndex !== -1) {
-                        trainingHands[mySeatIndex] = data.hands[`hand_${mySeatIndex}`] || [];
+                        for (let i = 0; i < 4; i++) {
+                            trainingHands[i] = data.hands[`hand_${i}`] || [];
+                        }
                         sortPlayerHand();
                         
                         if (!roomDealAnimated) {
@@ -2179,20 +2181,38 @@
         
         async function executeBotPlayMultiplayer(roomData) {
             if ((roomData.currentTrick || []).length >= 4) return;
-            const botHand = roomData.hands[`hand_${roomData.currentTurn}`] || [];
+            const botIndex = roomData.currentTurn;
+            const botHand = roomData.hands[`hand_${botIndex}`] || [];
             if (botHand.length === 0) return;
             
             const validCards = getValidCards(botHand, roomData.currentTrick || [], roomData.currentContract || '');
             const cardToPlay = validCards[Math.floor(Math.random() * validCards.length)];
-            
+            const cardIndex = botHand.indexOf(cardToPlay);
+
+            const isBelote = checkBeloteEligibility(botIndex, cardIndex, botHand);
             const updatedHand = botHand.filter(c => !(c.val === cardToPlay.val && c.suit === cardToPlay.suit));
             
+            let currentTeamScores = roomData.roundScore || { team0: 0, team1: 0 };
+            if (isBelote) {
+                if (botIndex % 2 === 0) currentTeamScores.team0 += 20;
+                else currentTeamScores.team1 += 20;
+            }
+
             let updatePayload = {};
-            updatePayload[`hands.hand_${roomData.currentTurn}`] = updatedHand;
-            updatePayload['currentTrick'] = [...(roomData.currentTrick || []), { player: roomData.currentTurn, card: cardToPlay }];
+            updatePayload[`hands.hand_${botIndex}`] = updatedHand;
+            updatePayload['currentTrick'] = [...(roomData.currentTrick || []), { player: botIndex, card: cardToPlay }];
+            updatePayload['roundScore'] = currentTeamScores;
             
-            let nextTurn = (roomData.currentTurn + 1) % 4;
-            updatePayload['currentTurn'] = updatePayload['currentTrick'].length >= 4 ? roomData.currentTurn : nextTurn;
+            if (isBelote) {
+                updatePayload.lastDeclaration = {
+                    player: botIndex,
+                    text: "БЕЛОТ! (+20т.)",
+                    time: Date.now()
+                };
+            }
+
+            let nextTurn = (botIndex + 1) % 4;
+            updatePayload['currentTurn'] = updatePayload['currentTrick'].length >= 4 ? botIndex : nextTurn;
             
             await updateDoc(getRoomPath(currentRoomCode), updatePayload);
         }
@@ -2697,9 +2717,8 @@
             }
         }
         
-        function checkBeloteEligibility(playerIndex, cardIndex) {
-            const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
-            const hand = trainingHands[targetIdx] || [];
+        function checkBeloteEligibility(playerIndex, cardIndex, customHand = null) {
+            const hand = customHand || trainingHands[playerIndex] || [];
             const playedCard = hand[cardIndex];
             
             if (!playedCard) return false;
@@ -2865,12 +2884,22 @@
                             else currentTeamScores.team1 += 20;
                         }
                         
-                        await updateDoc(roomRef, {
+                        let updatePayload = {
                             [`hands.hand_${mySeatIndex}`]: updatedServerHand,
                             currentTrick: newTrick,
                             currentTurn: newTrick.length >= 4 ? mySeatIndex : nextTurn,
                             roundScore: currentTeamScores
-                        });
+                        };
+
+                        if (isBelote) {
+                            updatePayload.lastDeclaration = {
+                                player: mySeatIndex,
+                                text: "БЕЛОТ! (+20т.)",
+                                time: Date.now()
+                            };
+                        }
+                        
+                        await updateDoc(roomRef, updatePayload);
                     }
                 } catch (err) {
                     console.error("Грешка при изиграване на карта:", err);
