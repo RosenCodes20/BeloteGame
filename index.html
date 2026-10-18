@@ -704,6 +704,8 @@
         let unsubscribeRoom = null;
         let mySeatIndex = -1;
         let isTrainingMode = false;
+        let isSubmittingMove = false;
+        let isClearingTrickMP = false;
 
         let trainingHands = [[], [], [], []];
         let currentTrick = [];
@@ -975,6 +977,8 @@
             callerTeam = -1;
             mySeatIndex = -1;
             roomDealAnimated = false;
+            isSubmittingMove = false;
+            isClearingTrickMP = false;
 
             if (trickArea) trickArea.innerHTML = '';
             const handContainer = document.getElementById('my-hand');
@@ -1375,26 +1379,32 @@
 
                     renderTrickArea();
 
-                    // АВТОМАТИЧНО ИЗЧИСТВАНЕ НА ВЗЯТКАТА СЛЕД 4-ТАТА КАРТА В МУЛТИПЛЕЙЪР
-                    if (currentTrick.length === 4 && mySeatIndex === 0) {
+                    // НАДЕЖДНО ИЗЧИСТВАНЕ НА РЪКАТА ОТ 4-ТИЯ ИЗИГРАЛ КАРТА
+                    if (currentTrick.length === 4 && !isClearingTrickMP) {
+                        isClearingTrickMP = true;
+                        const lastPlayer = currentTrick[3].player;
+                        
                         setTimeout(async () => {
-                            const ledSuit = currentTrick[0].card.suit;
-                            let winnerPlay = currentTrick[0];
-                            let highestPower = getCardPower(winnerPlay.card, ledSuit, currentContract);
+                            if (mySeatIndex === lastPlayer) {
+                                const ledSuit = currentTrick[0].card.suit;
+                                let winnerPlay = currentTrick[0];
+                                let highestPower = getCardPower(winnerPlay.card, ledSuit, currentContract);
 
-                            for (let i = 1; i < 4; i++) {
-                                let play = currentTrick[i];
-                                let power = getCardPower(play.card, ledSuit, currentContract);
-                                if (power > highestPower) {
-                                    highestPower = power;
-                                    winnerPlay = play;
+                                for (let i = 1; i < 4; i++) {
+                                    let play = currentTrick[i];
+                                    let power = getCardPower(play.card, ledSuit, currentContract);
+                                    if (power > highestPower) {
+                                        highestPower = power;
+                                        winnerPlay = play;
+                                    }
                                 }
+                                await updateDoc(getRoomPath(currentRoomCode), {
+                                    currentTrick: [],
+                                    currentTurn: winnerPlay.player
+                                });
                             }
-                            await updateDoc(getRoomPath(currentRoomCode), {
-                                currentTrick: [],
-                                currentTurn: winnerPlay.player
-                            });
-                        }, 1800);
+                            isClearingTrickMP = false;
+                        }, 1200);
                     }
 
                     if (data.hands && mySeatIndex !== -1) {
@@ -2090,7 +2100,6 @@
             }
         }
 
-        // ДИРЕКТНО ВЗИМАНЕ НА ЛОГИКАТА ЗА ПОДАВАНЕ ОТ ТРЕНИРОВКАТА
         function renderPlayerHand() {
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
@@ -2098,10 +2107,11 @@
             const targetIdx = isTrainingMode ? 0 : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
             
-            let isMyTurnToPlay = isTrainingMode ? (gamePhase === 'playing' && currentTurn === 0) : (gamePhase === 'playing' && currentTurn === mySeatIndex);
+            let isMyTurnToPlay = isTrainingMode 
+                ? (gamePhase === 'playing' && currentTurn === 0) 
+                : (gamePhase === 'playing' && currentTurn === mySeatIndex && currentTrick.length < 4 && !isSubmittingMove);
             
-            // ВИНАГИ РАЗРЕШАВАМЕ ВАЛИДИРАНЕТО ЛОКАЛНО ЗА БЪРЗОДЕЙСТВИЕ
-            let validCards = isMyTurnToPlay ? getValidCards(hand, currentTrick, currentContract || '') : hand;
+            let validCards = isMyTurnToPlay ? getValidCards(hand, currentTrick, currentContract || '') : [];
             
             const isMobile = window.innerWidth <= 768;
             
@@ -2109,7 +2119,7 @@
                 const isValid = validCards.some(vc => vc.suit === card.suit && vc.val === card.val);
                 
                 const cardEl = document.createElement('div');
-                cardEl.className = `card ${card.color} ${isMyTurnToPlay && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
+                cardEl.className = `card ${card.color} ${isMyTurnToPlay && isValid ? 'playable' : ''} ${(!isValid || !isMyTurnToPlay) && gamePhase === 'playing' ? 'invalid-card' : ''}`;
                 
                 const offset = index - (hand.length - 1) / 2;
                 const rotate = offset * (isMobile ? 3 : 5.5);
@@ -2138,8 +2148,14 @@
         }
 
         async function playCard(playerIndex, cardIndex, forceDeclareBelote = null) {
+            if (isSubmittingMove) return;
+            isSubmittingMove = true;
+
             const playedCard = trainingHands[playerIndex][cardIndex];
-            if (!playedCard) return;
+            if (!playedCard) {
+                isSubmittingMove = false;
+                return;
+            }
 
             if (isTrainingMode) {
                 trainingHands[playerIndex].splice(cardIndex, 1);
@@ -2157,26 +2173,36 @@
                     updateTurnVisuals();
                     handlePlayTurn();
                 }
+                isSubmittingMove = false;
             } else if (currentRoomCode) {
-                // ЛОКАЛНО ОБНОВЯВАНЕ ВЕДНАГА (КАКТО В ТРЕНИРОВКАТА)
-                trainingHands[mySeatIndex].splice(cardIndex, 1);
-                renderPlayerHand();
+                try {
+                    const roomRef = getRoomPath(currentRoomCode);
+                    const docSnap = await getDoc(roomRef);
+                    
+                    if (docSnap.exists()) {
+                        const roomData = docSnap.data();
+                        const myHand = roomData.hands[`hand_${mySeatIndex}`] || [];
+                        const cardToPlay = myHand[cardIndex];
 
-                const roomRef = getRoomPath(currentRoomCode);
-                const docSnap = await getDoc(roomRef);
-                if (!docSnap.exists()) return;
-                const roomData = docSnap.data();
+                        if (cardToPlay) {
+                            const updatedHand = myHand.filter((_, idx) => idx !== cardIndex);
+                            let updatePayload = {};
+                            updatePayload[`hands.hand_${mySeatIndex}`] = updatedHand;
+                            
+                            const newTrick = [...(roomData.currentTrick || []), { player: mySeatIndex, card: cardToPlay }];
+                            updatePayload['currentTrick'] = newTrick;
+                            
+                            let nextTurn = (mySeatIndex + 1) % 4;
+                            updatePayload['currentTurn'] = newTrick.length === 4 ? mySeatIndex : nextTurn;
 
-                let updatePayload = {};
-                updatePayload[`hands.hand_${mySeatIndex}`] = trainingHands[mySeatIndex];
-                
-                const newTrick = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
-                updatePayload['currentTrick'] = newTrick;
-                
-                let nextTurn = (mySeatIndex + 1) % 4;
-                updatePayload['currentTurn'] = newTrick.length === 4 ? mySeatIndex : nextTurn;
-
-                await updateDoc(roomRef, updatePayload);
+                            await updateDoc(roomRef, updatePayload);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Грешка при подаване на карта:", err);
+                } finally {
+                    isSubmittingMove = false;
+                }
             }
         }
 
