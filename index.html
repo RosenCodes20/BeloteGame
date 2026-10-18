@@ -666,7 +666,19 @@
             <div id="declarations-modal-list" class="flex flex-col gap-2 mb-6 text-left max-h-48 overflow-y-auto pr-2 custom-scrollbar"></div>
             <div class="flex flex-col gap-3 justify-center">
                 <button id="btn-declare-yes" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg">Обяви маркираните</button>
-                <button id="btn-declare-no" class="bg-slate-700/50 hover:bg-slate-600/50 border border-slate-500/50 text-white font-bold py-3 px-4 rounded-xl transition-all">Пазас (Не обявявай нищо)</button>
+                <button id="btn-declare-no" class="bg-slate-700/50 hover:bg-slate-600/50 border border-slate-500/50 text-white font-bold py-3 px-4 rounded-xl transition-all">Пазас (Не обявявай)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="belote-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[70] hidden items-center justify-center px-4">
+        <div class="glass-panel modal-content border-yellow-500/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+            <div class="w-14 h-14 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-yellow-400/50 text-yellow-400 text-2xl font-black">20</div>
+            <h2 class="text-xl font-bold text-white mb-2">Обявяване на Белот?</h2>
+            <p class="text-sm text-slate-400 mb-6 bg-black/20 p-3 rounded-lg">Изигравате Поп или Дама от коза. Искате ли да обявите "Белот" (+20 точки)?</p>
+            <div class="flex gap-3 justify-center">
+                <button id="btn-belote-yes" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg">Да</button>
+                <button id="btn-belote-no" class="flex-1 bg-red-500/80 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-all">Не (Пазас)</button>
             </div>
         </div>
     </div>
@@ -719,6 +731,7 @@
         
         let allDeclaredItems = []; 
         let myPendingDeclarations = [];
+        let pendingPlayCardIndex = -1;
 
         let globalScore = { us: 0, them: 0 };
         let roundScore = { us: 0, them: 0 };
@@ -747,7 +760,7 @@
         let deck = [];
 
         // ----------------------------------------------------
-        // HELPER FUNCTIONS FOR CONTRACT & TRUMP IDENTIFICATION
+        // HELPER FUNCTIONS FOR CONTRACT & SCORING
         // ----------------------------------------------------
         function getContractTrumpSuit(contractStr) {
             if (!contractStr) return null;
@@ -755,7 +768,7 @@
             if (contractStr.includes('♥') || contractStr.includes('Пука')) return '♥';
             if (contractStr.includes('♦') || contractStr.includes('Кало')) return '♦';
             if (contractStr.includes('♣') || contractStr.includes('Скапия')) return '♣';
-            return null; // Без коз или Всичко коз
+            return null;
         }
 
         function isAllTrumps(contractStr) {
@@ -764,6 +777,14 @@
 
         function isNoTrumps(contractStr) {
             return contractStr ? contractStr.includes('Под коньете') : false;
+        }
+
+        // ОФИЦИАЛНО ЗАКРЪГЛЯНЕ В БЕЛОТ (258т -> 26т)
+        function roundBelotePoints(pts) {
+            const rem = pts % 10;
+            if (rem >= 6) return Math.floor(pts / 10) + 1;
+            if (rem <= 4) return Math.floor(pts / 10);
+            return Math.round(pts / 10);
         }
 
         function getRoomPath(code) {
@@ -873,29 +894,39 @@
             modalEl.classList.add('flex');
         }
 
-        document.getElementById('btn-declare-yes').addEventListener('click', () => {
+        document.getElementById('btn-declare-yes').addEventListener('click', async () => {
             const modalEl = document.getElementById('declarations-modal');
             modalEl.classList.add('hidden');
             modalEl.classList.remove('flex');
 
             const checkboxes = document.querySelectorAll('#declarations-modal-list input[type="checkbox"]');
             let selectedPublicNames = [];
+            let addedPoints = 0;
 
             checkboxes.forEach(cb => {
                 if (cb.checked) {
                     const idx = parseInt(cb.getAttribute('data-index'));
                     const item = myPendingDeclarations[idx];
-                    allDeclaredItems.push({
-                        playerIndex: isTrainingMode ? 0 : mySeatIndex,
-                        team: isTrainingMode ? 0 : (mySeatIndex % 2),
-                        ...item
-                    });
+                    addedPoints += item.points;
                     selectedPublicNames.push(item.publicName);
                 }
             });
 
+            const pIdx = isTrainingMode ? 0 : mySeatIndex;
             if (selectedPublicNames.length > 0) {
-                showSpeechBubble(isTrainingMode ? 0 : mySeatIndex, selectedPublicNames.join(', '));
+                showSpeechBubble(pIdx, selectedPublicNames.join(', '));
+                if (isTrainingMode) {
+                    roundScore.us += addedPoints;
+                } else if (currentRoomCode) {
+                    const roomRef = getRoomPath(currentRoomCode);
+                    const snap = await getDoc(roomRef);
+                    if (snap.exists()) {
+                        let scores = snap.data().roundScore || { team0: 0, team1: 0 };
+                        if (mySeatIndex % 2 === 0) scores.team0 += addedPoints;
+                        else scores.team1 += addedPoints;
+                        await updateDoc(roomRef, { roundScore: scores });
+                    }
+                }
             }
 
             renderPlayerHand();
@@ -951,6 +982,7 @@
             hasShownDeclarations = false;
             allDeclaredItems = [];
             myPendingDeclarations = [];
+            pendingPlayCardIndex = -1;
             globalScore = { us: 0, them: 0 };
             roundScore = { us: 0, them: 0 };
             tricksWon = { us: 0, them: 0 };
@@ -971,6 +1003,8 @@
             document.getElementById('contract-display').classList.add('hidden');
             document.getElementById('declarations-modal').classList.add('hidden');
             document.getElementById('declarations-modal').classList.remove('flex');
+            document.getElementById('belote-modal').classList.add('hidden');
+            document.getElementById('belote-modal').classList.remove('flex');
 
             ['bottom', 'right', 'top', 'left'].forEach(pos => {
                 const seat = document.getElementById(`seat-${pos}`);
@@ -1380,7 +1414,7 @@
 
                     renderTrickArea();
 
-                    // АНИМАЦИЯ И ОБРАБОТКА НА ПРИБИРАНЕТО НА РЪКАТА В МУЛТИПЛЕЙЪР (С ПАУЗА ЗА ПРЕГЛЕД НА 4-ТА КАРТА)
+                    // АНИМАЦИЯ И ОБРАБОТКА НА ПРИБИРАНЕТО НА РЪКАТА В МУЛТИПЛЕЙЪР
                     if (currentTrick.length >= 4 && !isClearingTrickMP) {
                         isClearingTrickMP = true;
                         
@@ -1409,7 +1443,6 @@
                             const relWinner = (winnerPlay.player - mySeatIndex + 4) % 4;
                             const winnerPos = posMap[relWinner];
 
-                            // Анимация за плъзгане на картите към победителя
                             const trickCards = document.querySelectorAll('.trick-card');
                             trickCards.forEach(cardEl => {
                                 cardEl.style.transition = 'all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)';
@@ -1460,8 +1493,9 @@
                                             if (currentTricksWon.team0 === 8) usRaw += 90;
                                             if (currentTricksWon.team1 === 8) themRaw += 90;
 
-                                            let usPoints = Math.floor(usRaw / 10);
-                                            let themPoints = Math.floor(themRaw / 10);
+                                            // ТОЧНО ЗАКРЪГЛЯНЕ В БЕЛОТ (258т -> 26т)
+                                            let usPoints = roundBelotePoints(usRaw);
+                                            let themPoints = roundBelotePoints(themRaw);
 
                                             let newGlobalUs = (snapData.globalScore?.us || 0) + usPoints;
                                             let newGlobalThem = (snapData.globalScore?.them || 0) + themPoints;
@@ -1492,7 +1526,7 @@
                         }, 400);
                     }
 
-                    // ПОКАЗВАНЕ НА РЕЗУЛТАТА СЛЕД ВРЪТКАТА И СТАРТИРАНЕ НА НОВА
+                    // ПОКАЗВАНЕ НА РЕЗУЛТАТА СЛЕД ВРЪТКАТА
                     if (data.gamePhase === 'round_ended' && !data.hasShownSummary) {
                         const summary = data.lastRoundSummary || { usPts: 0, themPts: 0, usRaw: 0, themRaw: 0 };
                         let summaryHtml = `
@@ -1560,12 +1594,14 @@
                                 renderPlayerHand();
                                 updateTurnVisuals();
                                 updateDealerVisuals();
+                                checkDeclarationsMP();
                             });
                         } else {
                             gamePhase = data.gamePhase;
                             renderPlayerHand();
                             updateTurnVisuals();
                             updateDealerVisuals();
+                            if (gamePhase === 'playing') checkDeclarationsMP();
                         }
                     }
 
@@ -1607,6 +1643,19 @@
                     checkAndTriggerBotTurn(data);
                 }
             }, (error) => console.error("Listen room error:", error));
+        }
+
+        function checkDeclarationsMP() {
+            if (isFirstTrick && !hasShownDeclarations && currentContract !== 'Под коньете' && mySeatIndex !== -1) {
+                const hand = trainingHands[mySeatIndex] || [];
+                if (hand.length === 8) {
+                    hasShownDeclarations = true;
+                    const decls = detectDeclarations(hand);
+                    if (decls.length > 0) {
+                        showDeclarationsModal(decls);
+                    }
+                }
+            }
         }
 
         async function checkAndTriggerBotTurn(roomData) {
@@ -2143,7 +2192,7 @@
                 if (trainingHands[0].length === 1) {
                     setTimeout(() => {
                         if (isTrainingMode && gamePhase === 'playing' && currentTurn === 0) {
-                            playCard(0, 0);
+                            checkAndPlayCard(0, 0);
                         }
                     }, 400);
                 }
@@ -2213,6 +2262,28 @@
             }
         }
 
+        function checkBeloteEligibility(playerIndex, cardIndex) {
+            const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
+            const hand = trainingHands[targetIdx] || [];
+            const playedCard = hand[cardIndex];
+
+            if (!playedCard) return false;
+            const val = playedCard.val;
+            if (val !== 'K' && val !== 'Q') return false;
+
+            const noTrumps = isNoTrumps(currentContract);
+            if (noTrumps) return false;
+
+            const allTrumps = isAllTrumps(currentContract);
+            const trumpSuit = getContractTrumpSuit(currentContract);
+            const isTrump = allTrumps || (trumpSuit && playedCard.suit === trumpSuit);
+
+            if (!isTrump) return false;
+
+            const requiredPartnerVal = val === 'K' ? 'Q' : 'K';
+            return hand.some((c, idx) => idx !== cardIndex && c.suit === playedCard.suit && c.val === requiredPartnerVal);
+        }
+
         function renderPlayerHand() {
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
@@ -2225,7 +2296,6 @@
                 : (gamePhase === 'playing' && currentTurn === mySeatIndex && currentTrick.length < 4 && !isSubmittingMove);
             
             let validCards = isMyTurnToPlay ? getValidCards(hand, currentTrick, currentContract || '') : [];
-            
             const isMobile = window.innerWidth <= 768;
             
             hand.forEach((card, index) => {
@@ -2252,7 +2322,8 @@
                 
                 if (isMyTurnToPlay && isValid) {
                     cardEl.addEventListener('click', () => {
-                        playCard(isTrainingMode ? 0 : mySeatIndex, index);
+                        const activeIdx = isTrainingMode ? 0 : mySeatIndex;
+                        checkAndPlayCard(activeIdx, index);
                     });
                 }
                 
@@ -2260,7 +2331,40 @@
             });
         }
 
-        async function playCard(playerIndex, cardIndex) {
+        function checkAndPlayCard(playerIndex, cardIndex) {
+            if (checkBeloteEligibility(playerIndex, cardIndex)) {
+                pendingPlayCardIndex = cardIndex;
+                const beloteModal = document.getElementById('belote-modal');
+                beloteModal.classList.remove('hidden');
+                beloteModal.classList.add('flex');
+            } else {
+                playCardConfirmed(playerIndex, cardIndex, false);
+            }
+        }
+
+        document.getElementById('btn-belote-yes').addEventListener('click', () => {
+            const beloteModal = document.getElementById('belote-modal');
+            beloteModal.classList.add('hidden');
+            beloteModal.classList.remove('flex');
+            if (pendingPlayCardIndex !== -1) {
+                const idx = pendingPlayCardIndex;
+                pendingPlayCardIndex = -1;
+                playCardConfirmed(isTrainingMode ? 0 : mySeatIndex, idx, true);
+            }
+        });
+
+        document.getElementById('btn-belote-no').addEventListener('click', () => {
+            const beloteModal = document.getElementById('belote-modal');
+            beloteModal.classList.add('hidden');
+            beloteModal.classList.remove('flex');
+            if (pendingPlayCardIndex !== -1) {
+                const idx = pendingPlayCardIndex;
+                pendingPlayCardIndex = -1;
+                playCardConfirmed(isTrainingMode ? 0 : mySeatIndex, idx, false);
+            }
+        });
+
+        async function playCardConfirmed(playerIndex, cardIndex, isBelote) {
             if (isSubmittingMove) return;
             
             const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
@@ -2272,7 +2376,12 @@
 
             isSubmittingMove = true;
 
+            if (isBelote) {
+                showSpeechBubble(playerIndex, "БЕЛОТ! (+20т.)");
+            }
+
             if (isTrainingMode) {
+                if (isBelote) roundScore.us += 20;
                 trainingHands[playerIndex].splice(cardIndex, 1);
                 currentTrick.push({ player: playerIndex, card: playedCard });
                 
@@ -2308,10 +2417,17 @@
                         const newTrick = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
                         let nextTurn = (mySeatIndex + 1) % 4;
 
+                        let currentTeamScores = roomData.roundScore || { team0: 0, team1: 0 };
+                        if (isBelote) {
+                            if (mySeatIndex % 2 === 0) currentTeamScores.team0 += 20;
+                            else currentTeamScores.team1 += 20;
+                        }
+
                         await updateDoc(roomRef, {
                             [`hands.hand_${mySeatIndex}`]: updatedServerHand,
                             currentTrick: newTrick,
-                            currentTurn: newTrick.length >= 4 ? mySeatIndex : nextTurn
+                            currentTurn: newTrick.length >= 4 ? mySeatIndex : nextTurn,
+                            roundScore: currentTeamScores
                         });
                     }
                 } catch (err) {
@@ -2331,11 +2447,12 @@
             const randomValidCard = validCards[Math.floor(Math.random() * validCards.length)];
             const cardIndex = hand.indexOf(randomValidCard);
             
-            playCard(currentTurn, cardIndex);
+            const isBelote = checkBeloteEligibility(currentTurn, cardIndex);
+            playCardConfirmed(currentTurn, cardIndex, isBelote);
         }
 
         function renderTrickArea() {
-            if (isClearingTrickMP) return; // Защита срещу дублиране и разрушаване на анимацията
+            if (isClearingTrickMP) return;
             trickArea.innerHTML = '';
             currentTrick.forEach((play, index) => {
                 const cardEl = document.createElement('div');
@@ -2463,8 +2580,8 @@
             if (tricksWon.us === 8) usCardPoints += 90;
             if (tricksWon.them === 8) themCardPoints += 90;
 
-            let usPoints = Math.floor(usCardPoints / 10);
-            let themPoints = Math.floor(themCardPoints / 10);
+            let usPoints = roundBelotePoints(usCardPoints);
+            let themPoints = roundBelotePoints(themCardPoints);
 
             globalScore.us += usPoints;
             globalScore.them += themPoints;
