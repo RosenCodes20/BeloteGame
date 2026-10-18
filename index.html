@@ -551,7 +551,6 @@
     </div>
 
     <div id="game-view" class="w-full h-full flex flex-col p-4 relative">
-        <!-- ПОПРАВКА 1: Преместено top-16 в мобилния изглед, за да не крие кода на стаята -->
         <div id="scoreboard" class="absolute top-16 left-4 glass-panel border border-green-500/50 rounded-xl p-3 z-50 flex gap-5 hidden">
             <div class="text-center min-w-[50px]">
                 <div class="text-[10px] text-green-400 font-black tracking-widest">НИЕ</div>
@@ -1404,7 +1403,6 @@
                         trainingHands[mySeatIndex] = data.hands[`hand_${mySeatIndex}`] || [];
                         sortPlayerHand();
 
-                        // ПОПРАВКА 3: Гарантирана анимация при първите 5 карти
                         if (!roomDealAnimated) {
                             roomDealAnimated = true;
                             let initialDealer = data.dealerIndex;
@@ -1430,7 +1428,6 @@
 
                     lastMultiplayerPhase = data.gamePhase;
 
-                    // ПОПРАВКА 2: Изписване на пълно име с икона (напр. Пука ❤️)
                     if (data.lastBidText && data.lastBidPlayer !== undefined) {
                         showSpeechBubble(data.lastBidPlayer, getFullBidDisplay(data.lastBidText));
                     }
@@ -2095,7 +2092,7 @@
             }
         }
 
-        // ПОПРАВКА 4: Прецизно съответствие на кликнатите карти с играта
+        // КОРИГИРАНА ЛОГИКА ЗА ИЗЧИСЛЯВАНЕ И КЛИКВАНЕ НА ВАЛИДНИ КАРТИ
         function renderPlayerHand() {
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
@@ -2115,7 +2112,9 @@
             const isMobile = window.innerWidth <= 768;
             
             hand.forEach((card, index) => {
+                // Сравняваме стойностите вместо референциите
                 const isValid = validCards.some(vc => vc.suit === card.suit && vc.val === card.val);
+                
                 const cardEl = document.createElement('div');
                 cardEl.className = `card ${card.color} ${isMyTurnToPlay && isValid ? 'playable' : ''} ${!isValid && gamePhase === 'playing' ? 'invalid-card' : ''}`;
                 
@@ -2225,10 +2224,12 @@
                 
                 let updatePayload = {};
                 updatePayload[`hands.hand_${mySeatIndex}`] = updatedHand;
-                updatePayload['currentTrick'] = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
+                
+                const newTrick = [...(roomData.currentTrick || []), { player: mySeatIndex, card: playedCard }];
+                updatePayload['currentTrick'] = newTrick;
                 
                 let nextTurn = (mySeatIndex + 1) % 4;
-                updatePayload['currentTurn'] = updatePayload['currentTrick'].length === 4 ? mySeatIndex : nextTurn;
+                updatePayload['currentTurn'] = newTrick.length === 4 ? mySeatIndex : nextTurn;
 
                 await updateDoc(roomRef, updatePayload);
             }
