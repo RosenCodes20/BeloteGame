@@ -1379,32 +1379,44 @@
 
                     renderTrickArea();
 
-                    // НАДЕЖДНО ИЗЧИСТВАНЕ НА РЪКАТА ОТ 4-ТИЯ ИЗИГРАЛ КАРТА
-                    if (currentTrick.length === 4 && !isClearingTrickMP) {
+                    // АВТОМАТИЧНО И СИГУРНО ИЗЧИСТВАНЕ ПРИ 4 ИЛИ ПОВЕЧЕ КАРТИ
+                    if (currentTrick.length >= 4 && !isClearingTrickMP) {
                         isClearingTrickMP = true;
-                        const lastPlayer = currentTrick[3].player;
                         
                         setTimeout(async () => {
-                            if (mySeatIndex === lastPlayer) {
-                                const ledSuit = currentTrick[0].card.suit;
-                                let winnerPlay = currentTrick[0];
-                                let highestPower = getCardPower(winnerPlay.card, ledSuit, currentContract);
+                            try {
+                                const roomRef = getRoomPath(currentRoomCode);
+                                const snap = await getDoc(roomRef);
+                                if (!snap.exists()) return;
+                                const snapData = snap.data();
+                                const snapTrick = snapData.currentTrick || [];
 
-                                for (let i = 1; i < 4; i++) {
-                                    let play = currentTrick[i];
-                                    let power = getCardPower(play.card, ledSuit, currentContract);
-                                    if (power > highestPower) {
-                                        highestPower = power;
-                                        winnerPlay = play;
+                                if (snapTrick.length >= 4) {
+                                    const first4 = snapTrick.slice(0, 4);
+                                    const ledSuit = first4[0].card.suit;
+                                    let winnerPlay = first4[0];
+                                    let highestPower = getCardPower(winnerPlay.card, ledSuit, snapData.currentContract);
+
+                                    for (let i = 1; i < 4; i++) {
+                                        let play = first4[i];
+                                        let power = getCardPower(play.card, ledSuit, snapData.currentContract);
+                                        if (power > highestPower) {
+                                            highestPower = power;
+                                            winnerPlay = play;
+                                        }
                                     }
+
+                                    await updateDoc(roomRef, {
+                                        currentTrick: [],
+                                        currentTurn: winnerPlay.player
+                                    });
                                 }
-                                await updateDoc(getRoomPath(currentRoomCode), {
-                                    currentTrick: [],
-                                    currentTurn: winnerPlay.player
-                                });
+                            } catch (e) {
+                                console.error("Грешка при изчистване на масата:", e);
+                            } finally {
+                                isClearingTrickMP = false;
                             }
-                            isClearingTrickMP = false;
-                        }, 1200);
+                        }, 1000);
                     }
 
                     if (data.hands && mySeatIndex !== -1) {
@@ -1581,6 +1593,7 @@
         }
 
         async function executeBotPlayMultiplayer(roomData) {
+            if ((roomData.currentTrick || []).length >= 4) return;
             const botHand = roomData.hands[`hand_${roomData.currentTurn}`] || [];
             if (botHand.length === 0) return;
 
@@ -1594,7 +1607,7 @@
             updatePayload['currentTrick'] = [...(roomData.currentTrick || []), { player: roomData.currentTurn, card: cardToPlay }];
             
             let nextTurn = (roomData.currentTurn + 1) % 4;
-            updatePayload['currentTurn'] = updatePayload['currentTrick'].length === 4 ? roomData.currentTurn : nextTurn;
+            updatePayload['currentTurn'] = updatePayload['currentTrick'].length >= 4 ? roomData.currentTurn : nextTurn;
 
             await updateDoc(getRoomPath(currentRoomCode), updatePayload);
         }
@@ -2151,6 +2164,11 @@
             if (isSubmittingMove) return;
             isSubmittingMove = true;
 
+            if (!isTrainingMode && currentTrick.length >= 4) {
+                isSubmittingMove = false;
+                return;
+            }
+
             const playedCard = trainingHands[playerIndex][cardIndex];
             if (!playedCard) {
                 isSubmittingMove = false;
@@ -2181,6 +2199,12 @@
                     
                     if (docSnap.exists()) {
                         const roomData = docSnap.data();
+                        
+                        if ((roomData.currentTrick || []).length >= 4) {
+                            isSubmittingMove = false;
+                            return;
+                        }
+
                         const myHand = roomData.hands[`hand_${mySeatIndex}`] || [];
                         const cardToPlay = myHand[cardIndex];
 
@@ -2193,7 +2217,7 @@
                             updatePayload['currentTrick'] = newTrick;
                             
                             let nextTurn = (mySeatIndex + 1) % 4;
-                            updatePayload['currentTurn'] = newTrick.length === 4 ? mySeatIndex : nextTurn;
+                            updatePayload['currentTurn'] = newTrick.length >= 4 ? mySeatIndex : nextTurn;
 
                             await updateDoc(roomRef, updatePayload);
                         }
