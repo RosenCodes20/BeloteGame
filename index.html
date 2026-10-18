@@ -930,7 +930,7 @@
                 if (isCapotA) return { scoreA: 35, scoreB: 0 };
                 if (isCapotB) return { scoreA: 0, scoreB: 35 };
                 
-                // Задължително умножаване x2 при Под коньете
+                // Умножаване x2 за Под коньете (общо 260 точки = 26 врътки)
                 let effectiveA = ptsA * 2;
                 let effectiveB = ptsB * 2;
                 
@@ -1706,22 +1706,24 @@
                                             
                                             const callerTeamIdx = (snapData.lastBidderIndex % 2 === 0) ? 0 : 1;
                                             const multiplier = snapData.gameMultiplier || 1;
+                                            const noTrumpsMode = isNoTrumps(snapData.currentContract);
+                                            const isCapotTeam0 = currentTricksWon.team0 === 8;
+                                            const isCapotTeam1 = currentTricksWon.team1 === 8;
                                             
                                             let team0Points = 0;
                                             let team1Points = 0;
                                             let isInside = false;
                                             
+                                            let rounded = calculatePairPoints(team0Raw, team1Raw, noTrumpsMode, isCapotTeam0, isCapotTeam1);
+                                            
                                             if (multiplier > 1) {
                                                 if (team0Raw > team1Raw) {
-                                                    let rounded = calculatePairPoints(team0Raw + team1Raw, 0);
-                                                    team0Points = rounded.scoreA * multiplier;
+                                                    team0Points = (rounded.scoreA + rounded.scoreB) * multiplier;
                                                     team1Points = 0;
                                                 } else if (team1Raw > team0Raw) {
-                                                    let rounded = calculatePairPoints(0, team0Raw + team1Raw);
-                                                    team1Points = rounded.scoreB * multiplier;
+                                                    team1Points = (rounded.scoreA + rounded.scoreB) * multiplier;
                                                     team0Points = 0;
                                                 } else {
-                                                    let rounded = calculatePairPoints(team0Raw, team1Raw);
                                                     team0Points = rounded.scoreA * multiplier;
                                                     team1Points = rounded.scoreB * multiplier;
                                                 }
@@ -1731,25 +1733,21 @@
                                             } else {
                                                 if (callerTeamIdx === 0) {
                                                     if (team0Raw > team1Raw) {
-                                                        let rounded = calculatePairPoints(team0Raw, team1Raw);
                                                         team0Points = rounded.scoreA;
                                                         team1Points = rounded.scoreB;
                                                     } else {
                                                         isInside = true;
                                                         team0Points = 0;
-                                                        let rounded = calculatePairPoints(0, team0Raw + team1Raw);
-                                                        team1Points = rounded.scoreB;
+                                                        team1Points = rounded.scoreA + rounded.scoreB;
                                                     }
                                                 } else {
                                                     if (team1Raw > team0Raw) {
-                                                        let rounded = calculatePairPoints(team0Raw, team1Raw);
                                                         team0Points = rounded.scoreA;
                                                         team1Points = rounded.scoreB;
                                                     } else {
                                                         isInside = true;
                                                         team1Points = 0;
-                                                        let rounded = calculatePairPoints(team0Raw + team1Raw, 0);
-                                                        team0Points = rounded.scoreA;
+                                                        team0Points = rounded.scoreA + rounded.scoreB;
                                                     }
                                                 }
                                             }
@@ -1807,19 +1805,19 @@
                         let insideText = summary.isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
                         
                         let summaryHtml = `
-                            <div class="space-y-3 text-left">
-                                <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${data.currentContract || ''}</p>
-                                ${insideText}
-                                <div class="flex justify-between text-slate-300 text-sm">
-                                    <span>Взети точки от картите:</span>
-                                    <span class="font-mono">Ние <b>${summary.team0Raw}</b> - Вие <b>${summary.team1Raw}</b></span>
-                                </div>
-                                <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
-                                    <p class="font-bold text-green-400 text-center">Краен резултат: Ние +${summary.usPts} | Вие +${summary.themPts}</p>
-                                </div>
-                                <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
-                            </div>
-                        `;
+                    <div class="space-y-3 text-left">
+                        <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${data.currentContract || ''}</p>
+                        ${insideText}
+                        <div class="flex justify-between text-slate-300 text-sm">
+                            <span>Взети точки от картите:</span>
+                            <span class="font-mono">Ние <b>${summary.team0Raw}</b> - Вие <b>${summary.team1Raw}</b></span>
+                        </div>
+                        <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
+                            <p class="font-bold text-green-400 text-center">Краен резултат: Ние +${summary.usPts} | Вие +${summary.themPts}</p>
+                        </div>
+                        <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
+                    </div>
+                `;
                         
                         if (summary.matchWinnerTeam !== -1) {
                             let winnerHeader = `<h3 class="text-xl font-bold text-center mb-2 text-yellow-400">🎉 ПОБЕДА ЗА ${summary.matchWinnerTeam === 0 ? 'ОТБОР НИЕ' : 'ОТБОР ВИЕ'}! 🎉</h3>`;
