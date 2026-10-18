@@ -1268,6 +1268,7 @@
                     currentTrick: [],
                     lastBidText: null,
                     lastBidPlayer: null,
+                    lastBidderIndex: -1,
                     globalScore: { us: 0, them: 0 },
                     roundScore: { team0: 0, team1: 0 },
                     tricksWon: { team0: 0, team1: 0 }
@@ -1399,7 +1400,6 @@
                     currentContractRaw = data.currentContractRaw;
                     currentTrick = data.currentTrick || [];
 
-                    // ИНДИКАТОР ЗА АНОНСА НАЙ-ОТГОРЕ
                     if (data.gamePhase === 'playing' && data.currentContract) {
                         let multStr = (data.gameMultiplier === 2) ? ' (КОНТРА)' : (data.gameMultiplier === 4) ? ' (РЕКОНТРА)' : '';
                         document.getElementById('current-game-value').textContent = `${data.currentContract}${multStr}`;
@@ -1414,7 +1414,7 @@
 
                     renderTrickArea();
 
-                    // АНИМАЦИЯ И ОБРАБОТКА НА ПРИБИРАНЕТО НА РЪКАТА В МУЛТИПЛЕЙЪР
+                    // ПРИБИРАНЕ НА РЪКАТА И ПРЕСМЯТАНЕ НА ТОЧКИТЕ
                     if (currentTrick.length >= 4 && !isClearingTrickMP) {
                         isClearingTrickMP = true;
                         
@@ -1487,25 +1487,56 @@
                                             if (winnerTeam === 0) currentTeamScores.team0 += 10;
                                             else currentTeamScores.team1 += 10;
 
-                                            let usRaw = currentTeamScores.team0;
-                                            let themRaw = currentTeamScores.team1;
+                                            let team0Raw = currentTeamScores.team0;
+                                            let team1Raw = currentTeamScores.team1;
 
-                                            if (currentTricksWon.team0 === 8) usRaw += 90;
-                                            if (currentTricksWon.team1 === 8) themRaw += 90;
+                                            if (currentTricksWon.team0 === 8) team0Raw += 90;
+                                            if (currentTricksWon.team1 === 8) team1Raw += 90;
 
-                                            // ТОЧНО ЗАКРЪГЛЯНЕ В БЕЛОТ (258т -> 26т)
-                                            let usPoints = roundBelotePoints(usRaw);
-                                            let themPoints = roundBelotePoints(themRaw);
+                                            const callerTeamIdx = (snapData.lastBidderIndex % 2 === 0) ? 0 : 1;
+                                            const multiplier = snapData.gameMultiplier || 1;
 
-                                            let newGlobalUs = (snapData.globalScore?.us || 0) + usPoints;
-                                            let newGlobalThem = (snapData.globalScore?.them || 0) + themPoints;
+                                            let team0Points = 0;
+                                            let team1Points = 0;
+                                            let isInside = false;
+
+                                            // ПРАВИЛО ЗА ВЪТРЕ (ПАДАНЕ)
+                                            if (callerTeamIdx === 0) {
+                                                if (team0Raw > team1Raw) {
+                                                    team0Points = roundBelotePoints(team0Raw) * multiplier;
+                                                    team1Points = roundBelotePoints(team1Raw) * multiplier;
+                                                } else {
+                                                    isInside = true;
+                                                    team0Points = 0;
+                                                    team1Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                }
+                                            } else {
+                                                if (team1Raw > team0Raw) {
+                                                    team0Points = roundBelotePoints(team0Raw) * multiplier;
+                                                    team1Points = roundBelotePoints(team1Raw) * multiplier;
+                                                } else {
+                                                    isInside = true;
+                                                    team1Points = 0;
+                                                    team0Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                }
+                                            }
+
+                                            let newGlobalUs = (snapData.globalScore?.us || 0) + team0Points;
+                                            let newGlobalThem = (snapData.globalScore?.them || 0) + team1Points;
 
                                             await updateDoc(roomRef, {
                                                 currentTrick: [],
                                                 currentTurn: winnerPlay.player,
                                                 gamePhase: 'round_ended',
                                                 globalScore: { us: newGlobalUs, them: newGlobalThem },
-                                                lastRoundSummary: { usPts: usPoints, themPts: themPoints, usRaw, themRaw }
+                                                lastRoundSummary: { 
+                                                    usPts: team0Points, 
+                                                    themPts: team1Points, 
+                                                    team0Raw, 
+                                                    team1Raw,
+                                                    isInside,
+                                                    callerTeamIdx
+                                                }
                                             });
                                         } else {
                                             await updateDoc(roomRef, {
@@ -1526,18 +1557,20 @@
                         }, 400);
                     }
 
-                    // ПОКАЗВАНЕ НА РЕЗУЛТАТА СЛЕД ВРЪТКАТА
                     if (data.gamePhase === 'round_ended' && !data.hasShownSummary) {
-                        const summary = data.lastRoundSummary || { usPts: 0, themPts: 0, usRaw: 0, themRaw: 0 };
+                        const summary = data.lastRoundSummary || { usPts: 0, themPts: 0, team0Raw: 0, team1Raw: 0, isInside: false, callerTeamIdx: 0 };
+                        let insideText = summary.isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
+                        
                         let summaryHtml = `
                             <div class="space-y-3 text-left">
                                 <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${data.currentContract || ''}</p>
-                                <div class="flex justify-between text-slate-300">
-                                    <span>Точки от игра:</span>
-                                    <span class="font-mono">Ние <b>${summary.usRaw}</b> - Вие <b>${summary.themRaw}</b></span>
+                                ${insideText}
+                                <div class="flex justify-between text-slate-300 text-sm">
+                                    <span>Взети точки от картите:</span>
+                                    <span class="font-mono">Ние <b>${summary.team0Raw}</b> - Вие <b>${summary.team1Raw}</b></span>
                                 </div>
                                 <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
-                                    <p class="font-bold text-green-400 text-center">Точки за рунда: Ние +${summary.usPts} | Вие +${summary.themPts}</p>
+                                    <p class="font-bold text-green-400 text-center">Краен резултат: Ние +${summary.usPts} | Вие +${summary.themPts}</p>
                                 </div>
                                 <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
                             </div>
@@ -1566,6 +1599,7 @@
                                     currentTrick: [],
                                     lastBidText: null,
                                     lastBidPlayer: null,
+                                    lastBidderIndex: -1,
                                     roundScore: { team0: 0, team1: 0 },
                                     tricksWon: { team0: 0, team1: 0 }
                                 });
@@ -2580,8 +2614,30 @@
             if (tricksWon.us === 8) usCardPoints += 90;
             if (tricksWon.them === 8) themCardPoints += 90;
 
-            let usPoints = roundBelotePoints(usCardPoints);
-            let themPoints = roundBelotePoints(themCardPoints);
+            const callerTeamIdx = (lastBidderIndex % 2 === 0) ? 0 : 1;
+            let usPoints = 0;
+            let themPoints = 0;
+            let isInside = false;
+
+            if (callerTeamIdx === 0) {
+                if (usCardPoints > themCardPoints) {
+                    usPoints = roundBelotePoints(usCardPoints) * gameMultiplier;
+                    themPoints = roundBelotePoints(themCardPoints) * gameMultiplier;
+                } else {
+                    isInside = true;
+                    usPoints = 0;
+                    themPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                }
+            } else {
+                if (themCardPoints > usCardPoints) {
+                    usPoints = roundBelotePoints(usCardPoints) * gameMultiplier;
+                    themPoints = roundBelotePoints(themCardPoints) * gameMultiplier;
+                } else {
+                    isInside = true;
+                    themPoints = 0;
+                    usPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                }
+            }
 
             globalScore.us += usPoints;
             globalScore.them += themPoints;
@@ -2589,15 +2645,18 @@
             document.getElementById('score-us').textContent = globalScore.us;
             document.getElementById('score-them').textContent = globalScore.them;
 
+            let insideText = isInside ? `<p class="text-red-400 font-bold text-center bg-red-900/40 p-2 rounded-lg my-2">ВЪТРЕ! Анонсиралият отбор падна!</p>` : '';
+
             let summaryHtml = `
                 <div class="space-y-3 text-left">
                     <p class="font-bold text-yellow-400 text-lg border-b border-white/10 pb-2">Игра: ${currentContract}</p>
+                    ${insideText}
                     <div class="flex justify-between text-slate-300">
-                        <span>Точки от ръце:</span>
+                        <span>Взети точки от картите:</span>
                         <span class="font-mono">Ние <b>${usCardPoints}</b> - Вие <b>${themCardPoints}</b></span>
                     </div>
                     <div class="mt-4 p-3 bg-green-900/30 border border-green-500/30 rounded-xl">
-                        <p class="font-bold text-green-400 text-center">Точки за рунда: Ние +${usPoints} | Вие +${themPoints}</p>
+                        <p class="font-bold text-green-400 text-center">Краен резултат: Ние +${usPoints} | Вие +${themPoints}</p>
                     </div>
                     <p class="text-xl font-bold text-white mt-4 text-center bg-black/30 p-2 rounded-lg">Общ резултат: ${globalScore.us} : ${globalScore.them}</p>
                 </div>
