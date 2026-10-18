@@ -785,6 +785,7 @@
                 if (valCounts[val] === 4 && val !== '7' && val !== '8') {
                     let pts = 100;
                     if (val === 'J') pts = 200;
+                    if (val === '9') pts = 150;
                     decls.push({
                         type: 'carre',
                         publicName: 'Каре',
@@ -871,8 +872,8 @@
                     const idx = parseInt(cb.getAttribute('data-index'));
                     const item = myPendingDeclarations[idx];
                     allDeclaredItems.push({
-                        playerIndex: 0,
-                        team: 0,
+                        playerIndex: isTrainingMode ? 0 : mySeatIndex,
+                        team: isTrainingMode ? 0 : (mySeatIndex % 2),
                         ...item
                     });
                     selectedPublicNames.push(item.publicName);
@@ -880,7 +881,7 @@
             });
 
             if (selectedPublicNames.length > 0) {
-                showSpeechBubble(0, selectedPublicNames.join(', '));
+                showSpeechBubble(isTrainingMode ? 0 : mySeatIndex, selectedPublicNames.join(', '));
             }
 
             renderPlayerHand();
@@ -1046,7 +1047,6 @@
             }
         }
 
-        // ПОДОБРЕНА ЛОГИКА ЗА СЪЗДАВАНЕ НА СТАЯ
         document.getElementById('btn-create').addEventListener('click', async () => {
             const name = playerNameInput.value.trim() || 'Играч';
             localStorage.setItem('belote_name', name);
@@ -1072,7 +1072,8 @@
                 await setDoc(roomRef, {
                     createdAt: Date.now(),
                     status: 'waiting',
-                    seats: initialSeats
+                    seats: initialSeats,
+                    globalScore: { us: 0, them: 0 }
                 });
                 joinSeatSelectionUI(code);
             } catch (err) {
@@ -1241,7 +1242,8 @@
                     gameMultiplier: 1,
                     currentTrick: [],
                     lastBidText: null,
-                    lastBidPlayer: null
+                    lastBidPlayer: null,
+                    globalScore: { us: 0, them: 0 }
                 });
 
                 if (unsubscribeRoom) {
@@ -1328,6 +1330,7 @@
         }
 
         let roomDealAnimated = false;
+        let lastMultiplayerPhase = 'waiting';
 
         function listenToRoom(code) {
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
@@ -1346,15 +1349,25 @@
                 if (data && data.status === 'playing') {
                     seatSelectView.style.display = 'none';
                     gameView.style.display = 'flex';
+                    document.getElementById('scoreboard').classList.remove('hidden');
+
+                    if (data.globalScore) {
+                        globalScore = data.globalScore;
+                        document.getElementById('score-us').textContent = globalScore.us || 0;
+                        document.getElementById('score-them').textContent = globalScore.them || 0;
+                    }
                     
                     gamePhase = data.gamePhase;
                     currentTurn = data.currentTurn;
                     dealerIndex = data.dealerIndex;
                     currentContract = data.currentContract;
                     currentContractRaw = data.currentContractRaw;
+                    currentTrick = data.currentTrick || [];
+
+                    renderTrickArea();
 
                     if (data.hands && mySeatIndex !== -1) {
-                        trainingHands[0] = data.hands[`hand_${mySeatIndex}`] || [];
+                        trainingHands[mySeatIndex] = data.hands[`hand_${mySeatIndex}`] || [];
                         sortPlayerHand();
 
                         if (!roomDealAnimated) {
@@ -1366,12 +1379,21 @@
                                 updateTurnVisuals();
                                 updateDealerVisuals();
                             });
+                        } else if (lastMultiplayerPhase === 'bidding' && data.gamePhase === 'playing') {
+                            let dealOrder = [(dealerIndex + 1) % 4, (dealerIndex + 2) % 4, (dealerIndex + 3) % 4, dealerIndex];
+                            animateDeal(3, dealOrder, () => {
+                                renderPlayerHand();
+                                updateTurnVisuals();
+                                updateDealerVisuals();
+                            });
                         } else {
                             renderPlayerHand();
                             updateTurnVisuals();
                             updateDealerVisuals();
                         }
                     }
+
+                    lastMultiplayerPhase = data.gamePhase;
 
                     if (data.lastBidText && data.lastBidPlayer !== undefined) {
                         showSpeechBubble(data.lastBidPlayer, data.lastBidText);
@@ -1390,6 +1412,15 @@
                                 btn.disabled = false;
                             }
                         });
+
+                        const btnKontra = document.getElementById('btn-kontra');
+                        const btnRekontra = document.getElementById('btn-rekontra');
+                        const isOpponentContract = currentContract !== null && (data.lastBidderIndex % 2 !== mySeatIndex % 2);
+                        const isOpponentKontra = data.gameMultiplier === 2 && (data.kontraBidderIndex % 2 !== mySeatIndex % 2);
+
+                        btnKontra.style.display = (isOpponentContract && data.gameMultiplier === 1) ? 'block' : 'none';
+                        btnRekontra.style.display = isOpponentKontra ? 'block' : 'none';
+
                         biddingPanel.style.display = 'flex';
                     } else {
                         biddingPanel.style.display = 'none';
@@ -1431,6 +1462,7 @@
             let newContract = roomData.currentContract;
             let newContractRaw = roomData.currentContractRaw;
             let passes = roomData.consecutivePasses || 0;
+            let lastBidder = roomData.lastBidderIndex !== undefined ? roomData.lastBidderIndex : -1;
 
             if (bid === 'Пазас') {
                 passes++;
@@ -1438,6 +1470,7 @@
                 newContract = bid;
                 newContractRaw = bid;
                 passes = 0;
+                lastBidder = roomData.currentTurn;
             }
 
             let nextTurn = (roomData.currentTurn + 1) % 4;
@@ -1461,7 +1494,8 @@
                     currentContract: null,
                     currentContractRaw: null,
                     lastBidText: 'Пазас (Ново раздаване)',
-                    lastBidPlayer: roomData.currentTurn
+                    lastBidPlayer: roomData.currentTurn,
+                    lastBidderIndex: -1
                 });
                 return;
             }
@@ -1488,7 +1522,8 @@
                     deck: currentDeck,
                     currentTurn: (roomData.dealerIndex + 1) % 4,
                     lastBidText: bid,
-                    lastBidPlayer: roomData.currentTurn
+                    lastBidPlayer: roomData.currentTurn,
+                    lastBidderIndex: lastBidder
                 });
                 return;
             }
@@ -1499,7 +1534,8 @@
                 currentContractRaw: newContractRaw,
                 consecutivePasses: passes,
                 lastBidText: bid,
-                lastBidPlayer: roomData.currentTurn
+                lastBidPlayer: roomData.currentTurn,
+                lastBidderIndex: lastBidder
             });
         }
 
@@ -1541,6 +1577,7 @@
                     let newContract = roomData.currentContract;
                     let newContractRaw = roomData.currentContractRaw;
                     let passes = roomData.consecutivePasses || 0;
+                    let lastBidder = roomData.lastBidderIndex !== undefined ? roomData.lastBidderIndex : -1;
 
                     if (bid === 'Пазас') {
                         passes++;
@@ -1548,6 +1585,7 @@
                         newContract = bid;
                         newContractRaw = bid;
                         passes = 0;
+                        lastBidder = mySeatIndex;
                     }
 
                     let nextTurn = (currentTurn + 1) % 4;
@@ -1571,7 +1609,8 @@
                             currentContract: null,
                             currentContractRaw: null,
                             lastBidText: 'Пазас (Ново раздаване)',
-                            lastBidPlayer: mySeatIndex
+                            lastBidPlayer: mySeatIndex,
+                            lastBidderIndex: -1
                         });
                         return;
                     }
@@ -1598,7 +1637,8 @@
                             deck: currentDeck,
                             currentTurn: (roomData.dealerIndex + 1) % 4,
                             lastBidText: bid,
-                            lastBidPlayer: mySeatIndex
+                            lastBidPlayer: mySeatIndex,
+                            lastBidderIndex: lastBidder
                         });
                         return;
                     }
@@ -1609,7 +1649,8 @@
                         currentContractRaw: newContractRaw,
                         consecutivePasses: passes,
                         lastBidText: bid,
-                        lastBidPlayer: mySeatIndex
+                        lastBidPlayer: mySeatIndex,
+                        lastBidderIndex: lastBidder
                     });
                 }
             });
@@ -1674,10 +1715,13 @@
         }
 
         function sortPlayerHand() {
-            trainingHands[0].sort((a, b) => {
-                if(a.suit === b.suit) return values.indexOf(a.val) - values.indexOf(b.val);
-                return suits.indexOf(a.suit) - suits.indexOf(b.suit);
-            });
+            let targetIdx = isTrainingMode ? 0 : mySeatIndex;
+            if (trainingHands[targetIdx]) {
+                trainingHands[targetIdx].sort((a, b) => {
+                    if(a.suit === b.suit) return values.indexOf(a.val) - values.indexOf(b.val);
+                    return suits.indexOf(a.suit) - suits.indexOf(b.suit);
+                });
+            }
         }
 
         function startTrainingGame() {
@@ -2136,7 +2180,6 @@
                     handlePlayTurn();
                 }
             } else if (currentRoomCode) {
-                // МУЛТИПЛЕЙЪР ДАВАНЕ НА КАРТА КЪМ FIREBASE
                 const roomRef = getRoomPath(currentRoomCode);
                 const docSnap = await getDoc(roomRef);
                 if (!docSnap.exists()) return;
@@ -2361,8 +2404,29 @@
             let usRaw = usCardPoints + declPoints.us;
             let themRaw = themCardPoints + declPoints.them;
 
-            let usPoints = Math.round(usRaw / 10);
-            let themPoints = Math.round(themRaw / 10);
+            let isAllTrumps = currentContract && currentContract.includes('На коньете');
+            
+            let usPoints = Math.floor(usRaw / 10);
+            let themPoints = Math.floor(themRaw / 10);
+            
+            let remUs = usRaw % 10;
+            let remThem = themRaw % 10;
+
+            if (isAllTrumps) {
+                if (remUs > 4) usPoints++;
+                if (remThem > 4) themPoints++;
+                if (remUs === 4 && remThem === 4) {
+                    if (usRaw < themRaw) usPoints++;
+                    else themPoints++;
+                }
+            } else {
+                if (remUs > 5) usPoints++;
+                if (remThem > 5) themPoints++;
+                if (remUs === 5 && remThem === 5) {
+                    if (usRaw < themRaw) usPoints++;
+                    else themPoints++;
+                }
+            }
 
             globalScore.us += usPoints;
             globalScore.them += themPoints;
