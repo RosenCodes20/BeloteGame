@@ -1331,6 +1331,7 @@
 
         let roomDealAnimated = false;
         let lastMultiplayerPhase = 'waiting';
+        let isClearingTrick = false;
 
         function listenToRoom(code) {
             unsubscribeRoom = onSnapshot(getRoomPath(code), (docSnap) => {
@@ -1365,6 +1366,30 @@
                     currentTrick = data.currentTrick || [];
 
                     renderTrickArea();
+
+                    // АВТОМАТИЧНО ИЗЧИСТВАНЕ НА ВЗЯТКАТА В МУЛТИПЛЕЙЪР СЛЕД 4-ТАТА КАРТА
+                    if (currentTrick.length === 4 && !isClearingTrick && mySeatIndex === 0) {
+                        isClearingTrick = true;
+                        setTimeout(async () => {
+                            const ledSuit = currentTrick[0].card.suit;
+                            let winnerPlay = currentTrick[0];
+                            let highestPower = getCardPower(winnerPlay.card, ledSuit, currentContract);
+
+                            for (let i = 1; i < 4; i++) {
+                                let play = currentTrick[i];
+                                let power = getCardPower(play.card, ledSuit, currentContract);
+                                if (power > highestPower) {
+                                    highestPower = power;
+                                    winnerPlay = play;
+                                }
+                            }
+                            await updateDoc(getRoomPath(currentRoomCode), {
+                                currentTrick: [],
+                                currentTurn: winnerPlay.player
+                            });
+                            isClearingTrick = false;
+                        }, 1800);
+                    }
 
                     if (data.hands && mySeatIndex !== -1) {
                         trainingHands[mySeatIndex] = data.hands[`hand_${mySeatIndex}`] || [];
@@ -2069,7 +2094,8 @@
             const handContainer = document.getElementById('my-hand');
             handContainer.innerHTML = '';
             
-            const hand = isTrainingMode ? trainingHands[0] : (trainingHands[mySeatIndex] || []);
+            const targetIdx = isTrainingMode ? 0 : mySeatIndex;
+            const hand = trainingHands[targetIdx] || [];
             let validCards = [];
             
             let isMyTurnToPlay = isTrainingMode ? (gamePhase === 'playing' && currentTurn === 0) : (gamePhase === 'playing' && currentTurn === mySeatIndex);
