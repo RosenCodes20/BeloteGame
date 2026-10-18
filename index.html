@@ -899,11 +899,29 @@
             return contractStr ? contractStr.includes('Под коньете') : false;
         }
 
-        function roundBelotePoints(pts) {
-            const rem = pts % 10;
-            if (rem >= 6) return Math.floor(pts / 10) + 1;
-            if (rem <= 4) return Math.floor(pts / 10);
-            return Math.round(pts / 10);
+        // КОРЕКЦИЯ 1: Правилно закръгляне в Белота (Закръгляне в полза на отбора с по-висок резултат при остатък 4)
+        function calculatePairPoints(ptsA, ptsB) {
+            const remA = ptsA % 10;
+            const remB = ptsB % 10;
+            
+            let roundedA = Math.floor(ptsA / 10);
+            let roundedB = Math.floor(ptsB / 10);
+
+            if (remA >= 6) roundedA++;
+            if (remB >= 6) roundedB++;
+
+            // При остатък 4 на 4 (напр. 164 на 114) или при общ остатък = 8 (например 4 и 4):
+            // Точката от закръглянето се дава на отбора с ПОВЕЧЕ сурови точки.
+            if (remA === 4 && remB === 4) {
+                if (ptsA > ptsB) roundedA++;
+                else if (ptsB > ptsA) roundedB++;
+            } else if (remA === 5) {
+                roundedA++;
+            } else if (remB === 5) {
+                roundedB++;
+            }
+
+            return { scoreA: roundedA, scoreB: roundedB };
         }
 
         function getRoomPath(code) {
@@ -1645,18 +1663,19 @@
                                             let team1Points = 0;
                                             let isInside = false;
 
-                                            // ЛОГИКА ЗА КОНТРА / РЕКОНТРА: Всички точки за отбора победител
                                             if (multiplier > 1) {
                                                 if (team0Raw > team1Raw) {
-                                                    team0Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                    let rounded = calculatePairPoints(team0Raw + team1Raw, 0);
+                                                    team0Points = rounded.scoreA * multiplier;
                                                     team1Points = 0;
                                                 } else if (team1Raw > team0Raw) {
-                                                    team1Points = roundBelotePoints(team0Raw + team1Raw) * multiplier;
+                                                    let rounded = calculatePairPoints(0, team0Raw + team1Raw);
+                                                    team1Points = rounded.scoreB * multiplier;
                                                     team0Points = 0;
                                                 } else {
-                                                    // При равенство в точките при контра
-                                                    team0Points = roundBelotePoints(team0Raw) * multiplier;
-                                                    team1Points = roundBelotePoints(team1Raw) * multiplier;
+                                                    let rounded = calculatePairPoints(team0Raw, team1Raw);
+                                                    team0Points = rounded.scoreA * multiplier;
+                                                    team1Points = rounded.scoreB * multiplier;
                                                 }
                                                 if ((callerTeamIdx === 0 && team1Raw >= team0Raw) || (callerTeamIdx === 1 && team0Raw >= team1Raw)) {
                                                     isInside = true;
@@ -1664,21 +1683,25 @@
                                             } else {
                                                 if (callerTeamIdx === 0) {
                                                     if (team0Raw > team1Raw) {
-                                                        team0Points = roundBelotePoints(team0Raw);
-                                                        team1Points = roundBelotePoints(team1Raw);
+                                                        let rounded = calculatePairPoints(team0Raw, team1Raw);
+                                                        team0Points = rounded.scoreA;
+                                                        team1Points = rounded.scoreB;
                                                     } else {
                                                         isInside = true;
                                                         team0Points = 0;
-                                                        team1Points = roundBelotePoints(team0Raw + team1Raw);
+                                                        let rounded = calculatePairPoints(0, team0Raw + team1Raw);
+                                                        team1Points = rounded.scoreB;
                                                     }
                                                 } else {
                                                     if (team1Raw > team0Raw) {
-                                                        team0Points = roundBelotePoints(team0Raw);
-                                                        team1Points = roundBelotePoints(team1Raw);
+                                                        let rounded = calculatePairPoints(team0Raw, team1Raw);
+                                                        team0Points = rounded.scoreA;
+                                                        team1Points = rounded.scoreB;
                                                     } else {
                                                         isInside = true;
                                                         team1Points = 0;
-                                                        team0Points = roundBelotePoints(team0Raw + team1Raw);
+                                                        let rounded = calculatePairPoints(team0Raw + team1Raw, 0);
+                                                        team0Points = rounded.scoreA;
                                                     }
                                                 }
                                             }
@@ -1693,8 +1716,8 @@
                                                 if (mySeatIndex === 0 && snapData.seats) {
                                                     const p1 = snapData.seats[matchWinnerTeam === 0 ? 0 : 1];
                                                     const p2 = snapData.seats[matchWinnerTeam === 0 ? 2 : 3];
-                                                    if (p1) recordWinner(p1.uid, p1.name, 2);
-                                                    if (p2) recordWinner(p2.uid, p2.name, 2);
+                                                    if (p1) await recordWinner(p1.uid, p1.name, 2);
+                                                    if (p2) await recordWinner(p2.uid, p2.name, 2);
                                                 }
                                             }
 
@@ -1750,7 +1773,6 @@
                             </div>
                         `;
 
-                        // СПИРАНЕ ПРИ 151+ ТОЧКИ И ПОПИТВАНЕ ЗА НОВА ИГРА
                         if (summary.matchWinnerTeam !== -1) {
                             let winnerHeader = `<h3 class="text-xl font-bold text-center mb-2 text-yellow-400">🎉 ПОБЕДА ЗА ${summary.matchWinnerTeam === 0 ? 'ОТБОР НИЕ' : 'ОТБОР ВИЕ'}! 🎉</h3>`;
                             
@@ -2542,7 +2564,6 @@
             }
         }
 
-        // КОРЕКЦИЯ 1: Белот може да се иска само от козовата боя
         function checkBeloteEligibility(playerIndex, cardIndex) {
             const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
@@ -2560,7 +2581,6 @@
             
             let isTrump = false;
             if (allTrumps) {
-                // При "На коньете" белот може да се викне само ако картите отговорят на боята на първата изиграна карта
                 const ledSuit = currentTrick.length > 0 ? currentTrick[0].card.suit : playedCard.suit;
                 isTrump = (playedCard.suit === ledSuit);
             } else if (trumpSuit) {
@@ -2860,7 +2880,7 @@
             }, 600);
         }
 
-        function endRoundAndScore() {
+        async function endRoundAndScore() {
             if (!isTrainingMode) return;
 
             let usCardPoints = roundScore.us;
@@ -2874,17 +2894,19 @@
             let themPoints = 0;
             let isInside = false;
 
-            // КОРЕКЦИЯ 2: При Контра (x2) или Реконтра (x4) всички точки отиват при отбора победител
             if (gameMultiplier > 1) {
                 if (usCardPoints > themCardPoints) {
-                    usPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                    let rounded = calculatePairPoints(usCardPoints + themCardPoints, 0);
+                    usPoints = rounded.scoreA * gameMultiplier;
                     themPoints = 0;
                 } else if (themCardPoints > usCardPoints) {
-                    themPoints = roundBelotePoints(usCardPoints + themCardPoints) * gameMultiplier;
+                    let rounded = calculatePairPoints(0, usCardPoints + themCardPoints);
+                    themPoints = rounded.scoreB * gameMultiplier;
                     usPoints = 0;
                 } else {
-                    usPoints = roundBelotePoints(usCardPoints) * gameMultiplier;
-                    themPoints = roundBelotePoints(themCardPoints) * gameMultiplier;
+                    let rounded = calculatePairPoints(usCardPoints, themCardPoints);
+                    usPoints = rounded.scoreA * gameMultiplier;
+                    themPoints = rounded.scoreB * gameMultiplier;
                 }
                 if ((callerTeamIdx === 0 && themCardPoints >= usCardPoints) || (callerTeamIdx === 1 && usCardPoints >= themCardPoints)) {
                     isInside = true;
@@ -2892,21 +2914,25 @@
             } else {
                 if (callerTeamIdx === 0) {
                     if (usCardPoints > themCardPoints) {
-                        usPoints = roundBelotePoints(usCardPoints);
-                        themPoints = roundBelotePoints(themCardPoints);
+                        let rounded = calculatePairPoints(usCardPoints, themCardPoints);
+                        usPoints = rounded.scoreA;
+                        themPoints = rounded.scoreB;
                     } else {
                         isInside = true;
                         usPoints = 0;
-                        themPoints = roundBelotePoints(usCardPoints + themCardPoints);
+                        let rounded = calculatePairPoints(0, usCardPoints + themCardPoints);
+                        themPoints = rounded.scoreB;
                     }
                 } else {
                     if (themCardPoints > usCardPoints) {
-                        usPoints = roundBelotePoints(usCardPoints);
-                        themPoints = roundBelotePoints(themCardPoints);
+                        let rounded = calculatePairPoints(usCardPoints, themCardPoints);
+                        usPoints = rounded.scoreA;
+                        themPoints = rounded.scoreB;
                     } else {
                         isInside = true;
                         themPoints = 0;
-                        usPoints = roundBelotePoints(usCardPoints + themCardPoints);
+                        let rounded = calculatePairPoints(usCardPoints + themCardPoints, 0);
+                        usPoints = rounded.scoreA;
                     }
                 }
             }
@@ -2934,14 +2960,14 @@
                 </div>
             `;
 
-            // КОРЕКЦИЯ 3: Спиране при 151+ точки и попитане за нова игра
+            // КОРЕКЦИЯ 2: Изчакване за сигурен запис в базата данни (Leaderboard) при победа
             if (globalScore.us >= 151 || globalScore.them >= 151) {
                 let isWinner = globalScore.us >= 151;
                 let winnerText = isWinner ? "🎉 Победа за Вашия Отбор! 🎉" : "😢 Победа за Ботовете 😢";
 
                 if (isWinner && currentUser) {
                     const name = playerNameInput.value.trim() || 'Играч';
-                    recordWinner(currentUser.uid, name, 1);
+                    await recordWinner(currentUser.uid, name, 1);
                 }
 
                 showGameOverModal(`КРАЙ НА ИГРАТА`, `<h3 class="text-xl font-bold text-center mb-4 text-emerald-400">${winnerText}</h3>` + summaryHtml, () => {
@@ -2954,7 +2980,7 @@
                     leaveRoomAndReset();
                 });
             } else {
-                showModal("Край на рунда", summaryHtml, () => {
+                showModal("Край на врътката", summaryHtml, () => {
                     dealerIndex = (dealerIndex + 1) % 4;
                     startTrainingGame();
                 });
