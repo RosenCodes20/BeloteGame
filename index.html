@@ -923,30 +923,37 @@
         }
         
         // КОРЕКЦИЯ 1: Правилно закръгляне в Белота (Закръгляне в полза на отбора с по-висок резултат при остатък 4)
-        function calculatePairPoints(ptsA, ptsB, isNoTrumpsMode = false) {
-            let effectiveA = isNoTrumpsMode ? ptsA * 2 : ptsA;
-            let effectiveB = isNoTrumpsMode ? ptsB * 2 : ptsB;
+        function calculatePairPoints(ptsA, ptsB, isNoTrumpsMode = false, isCapotA = false, isCapotB = false) {
+            if (isNoTrumpsMode) {
+                // При капо на Под коньете се дават 35 точки
+                if (isCapotA) return { scoreA: 35, scoreB: 0 };
+                if (isCapotB) return { scoreA: 0, scoreB: 35 };
+                
+                // При стандартно разпределение 130-те точки от картите се умножават x2 (общо 260 = 26 врътки)
+                let effectiveA = ptsA * 2;
+                let effectiveB = ptsB * 2;
+                
+                let roundedA = Math.round(effectiveA / 10);
+                let roundedB = Math.round(effectiveB / 10);
+                return { scoreA: roundedA, scoreB: roundedB };
+            }
             
-            const remA = effectiveA % 10;
-            const remB = effectiveB % 10;
-            
-            let roundedA = Math.floor(effectiveA / 10);
-            let roundedB = Math.floor(effectiveB / 10);
+            // Стандартно изчисление за Коз / Всичко коз
+            let roundedA = Math.floor(ptsA / 10);
+            let roundedB = Math.floor(ptsB / 10);
+            const remA = ptsA % 10;
+            const remB = ptsB % 10;
             
             if (remA >= 6) roundedA++;
             if (remB >= 6) roundedB++;
             
-            if (remA === 4 && remB === 4) {
-                if (effectiveA > effectiveB) roundedA++;
-                else if (effectiveB > effectiveA) roundedB++;
-            } else if (remA === 5) {
-                if (effectiveA >= effectiveB) roundedA++;
+            if (remA === 5) {
+                if (ptsA >= ptsB) roundedA++;
                 else roundedB++;
             }
             
             return { scoreA: roundedA, scoreB: roundedB };
         }
-        
         function getRoomPath(code) {
             return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
         }
@@ -1597,6 +1604,8 @@
                     } else if (data.gamePhase === 'bidding') {
                         document.getElementById('current-game-indicator').classList.add('hidden');
                         document.getElementById('contract-display').classList.add('hidden');
+                        hasShownDeclarations = false;
+                        isFirstTrick = true;
                     }
                     
                     renderTrickArea();
@@ -1937,9 +1946,12 @@
         }
         
         function checkDeclarationsMP() {
-            if (isFirstTrick && !hasShownDeclarations && currentContract !== 'Под коньете' && mySeatIndex !== -1) {
+            if (isFirstTrick && !hasShownDeclarations && mySeatIndex !== -1) {
+                // На "Под коньете" не се обявяват анонси
+                if (currentContract && isNoTrumps(currentContract)) return;
+                
                 const hand = trainingHands[mySeatIndex] || [];
-                if (hand.length === 8) {
+                if (hand.length >= 5) {
                     hasShownDeclarations = true;
                     const decls = detectDeclarations(hand);
                     if (decls.length > 0) {
@@ -2096,7 +2108,9 @@
         
         document.querySelectorAll('.bid-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                const bid = e.target.getAttribute('data-bid');
+                const targetBtn = e.currentTarget;
+                const bid = targetBtn.getAttribute('data-bid');
+                if (!bid) return;
                 
                 if (isTrainingMode) {
                     if (gamePhase !== 'bidding' || currentTurn !== 0) return;
@@ -2104,6 +2118,7 @@
                     processBid(0, bid);
                 } else if (currentRoomCode && currentTurn === mySeatIndex) {
                     biddingPanel.style.display = 'none';
+                    showSpeechBubble(mySeatIndex, getFullBidDisplay(bid));
                     
                     const roomRef = getRoomPath(currentRoomCode);
                     const docSnap = await getDoc(roomRef);
