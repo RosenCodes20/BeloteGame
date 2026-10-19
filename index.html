@@ -2752,9 +2752,11 @@
             const targetIdx = isTrainingMode ? 0 : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
             
-            let isMyTurnToPlay = isTrainingMode 
-            ? (gamePhase === 'playing' && currentTurn === 0) 
-            : (gamePhase === 'playing' && currentTurn === mySeatIndex && currentTrick.length < 4 && !isSubmittingMove);
+            let isMyTurnToPlay = !isSubmittingMove && (isTrainingMode 
+                ? (gamePhase === 'playing' && currentTurn === 0) 
+                : (gamePhase === 'playing' && currentTurn === mySeatIndex && currentTrick.length < 4));
+            
+            handContainer.style.pointerEvents = isMyTurnToPlay ? 'auto' : 'none';
             
             let validCards = isMyTurnToPlay ? getValidCards(hand, currentTrick, currentContract || '') : [];
             const isMobile = window.innerWidth <= 768;
@@ -2793,6 +2795,12 @@
         }
         
         function checkAndPlayCard(playerIndex, cardIndex) {
+            if (isSubmittingMove) return;
+            
+            isSubmittingMove = true;
+            const handContainer = document.getElementById('my-hand');
+            if (handContainer) handContainer.style.pointerEvents = 'none';
+
             if (checkBeloteEligibility(playerIndex, cardIndex)) {
                 pendingPlayCardIndex = cardIndex;
                 const beloteModal = document.getElementById('belote-modal');
@@ -2826,16 +2834,18 @@
         });
         
         async function playCardConfirmed(playerIndex, cardIndex, isBelote) {
-            if (isSubmittingMove) return;
-            
             const targetIdx = isTrainingMode ? playerIndex : mySeatIndex;
             const hand = trainingHands[targetIdx] || [];
             const playedCard = hand[cardIndex];
             
-            if (!playedCard) return;
-            if (!isTrainingMode && currentTrick.length >= 4) return;
-            
-            isSubmittingMove = true;
+            if (!playedCard) {
+                isSubmittingMove = false;
+                return;
+            }
+            if (!isTrainingMode && currentTrick.length >= 4) {
+                isSubmittingMove = false;
+                return;
+            }
             
             if (isBelote) {
                 showSpeechBubble(playerIndex, "БЕЛОТ! (+20т.)");
